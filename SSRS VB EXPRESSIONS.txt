@@ -1,0 +1,2578 @@
+/* SSRS VB EXPRESSIONS */
+/* personal list */
+
+/* Notes */
+/* SSRS */
+
+https://www.experts-exchange.com/articles/3889/Daylight-Savings-and-GMT-Time-correction-for-SSRS.html
+
+
+TIMEZONE OFFSET:
+=System.TimeZone.CurrentTimeZone.ToLocalTime(Fields!CreatedDate.Value)
+
+status start
+=System.TimeZone.CurrentTimeZone.ToLocalTime(Fields!StatusStartTime.Value)
+
+
+
+/* Dates in SSRS */
+
+
+/* formatting as SHORT DATES */
+
+	=FormatDateTime(Fields!CreatedDateTime.Value.ToLocalTime(), DateFormat.ShortDate)
+	=FormatDateTime(Fields!Created.Value.ToLocalTime(), DateFormat.ShortDate)
+	
+/* SSRS end result date + short date expressions */
+
+=IIF(
+	Fields!CreatedDateTime.Value is nothing, 
+	"",  
+	Fields!CreatedDateTime.Value.ToLocalTime()
+	)
+
+=IIF(
+	Fields!FirstAssignedDateTime.Value is nothing, 
+	"",  
+	FormatDateTime(Fields!FirstAssignedDateTime.Value.ToLocalTime(), DateFormat.ShortDate)
+	)
+
+	
+/*
+Timezone adjusted parameter: adjust for local/UTC different at particular time. 
+Convert UTC times to local times
+*/
+
+/* Timezone Method */
+Param1 - user input date/time - date/time
+Param 2 - modify param1 to local time - date/time
+	=Parameters!ReportParameter1.Value.ToLocalTime()
+Param3 - find difference in hours between Param1 and Param2 - int
+	=DateDiff("h",Parameters!ReportParameter2.Value,Parameters!ReportParameter1.Value)
+Param4 - add the difference to the original parameter, pass it to the query - date/time
+	=DateAdd("h",Parameters!ReportParameter5.Value,Parameters!ReportParameter1.Value)
+
+
+-- formula for StartDate_BaseValue_Adjusted
+=DateAdd("h",DateDiff("h", Parameters!StartDate_BaseValue.Value.ToLocalTime(), Parameters!StartDate_BaseValue.Value), Parameters!StartDate_BaseValue.Value)	
+=DateAdd("h",DateDiff("h", Parameters!EndDate_BaseValue.Value.ToLocalTime(), Parameters!EndDate_BaseValue.Value), Parameters!EndDate_BaseValue.Value)
+
+-- full incident history list - formula for stuffs
+=DateAdd("h",DateDiff("h", Parameters!CreatedDate_Start.Value.ToLocalTime(), Parameters!CreatedDate_Start.Value), Parameters!CreatedDate_Start.Value)
+=DateAdd("h",DateDiff("h", Parameters!CreatedDate_End.Value.ToLocalTime(), Parameters!CreatedDate_End.Value), Parameters!CreatedDate_End.Value)
+=DateAdd("h",DateDiff("h", Parameters!StartDate_Start.Value.ToLocalTime(), Parameters!StartDate_Start.Value), Parameters!StartDate_Start.Value)
+=DateAdd("h",DateDiff("h", Parameters!StartDate_End.Value.ToLocalTime(), Parameters!StartDate_End.Value), Parameters!StartDate_End.Value)
+=DateAdd("h",DateDiff("h", Parameters!EndDate_Start.Value.ToLocalTime(), Parameters!EndDate_Start.Value), Parameters!EndDate_Start.Value)
+=DateAdd("h",DateDiff("h", Parameters!EndDate_End.Value.ToLocalTime(), Parameters!EndDate_End.Value), Parameters!EndDate_End.Value)	
+	
+	
+/* Trying to get expressions to remove #Error */
+
+=IIF(IsNothing(Fields!DatumBSE.Value), "", FormatDateTime(Fields!DatumBSE.Value, 2))
+=IIF(Fields!DatumBSE.Value is nothing, nothing, FormatDateTime(Fields!DatumBSE.Value, 2))
+
+
+/* Date interval month last 30 days */
+
+=DateAdd(DateInterval.Month,-1,)
+=DateAdd(DateInterval.Day,-31,)
+
+
+/* Display fields in matrix which lack values */
+=Sum(IIf(Fields!AgeGroup.Value = "5-16", Fields!Amount.Value, Nothing)
+)
+
+
+
+
+
+/* Age */
+=IF(OR($M3="Pending",$M3="Active"),$AF$1-$AB3,0)
+
+/* SSRS expression */
+=DateDiff("d",Now(),Fields!Created.Value)
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Aging Incident Table Logic */
+
+=IIf(Fields!Age.Value>=7 And Count(Fields!Id.Value)>=1,"Red","No Color")
+
+/* **************** */
+/* ALL TEAMS */
+/* **************** */
+
+Retail Support
+R10 War Room
+R10 Tech Arch
+R10 Development
+R10 Data
+Retail Payments
+OnePOS Configuration -- never has any tickets
+Aloha Support Team
+Retail Support L2
+Aloha Data Configuration Team -- not represented in buckets
+R10 Hardware Support
+
+--RS, PAYMENTS SAME RULES
+/* **************** */
+/* ALL TEAMS */
+/* **************** */
+	
+	
+/* CONDITIONAL FORMATTING LOGIC - cell background color - SERVICE LEVEL AGREEMENTS SLA */
+
+--For active & aging incidents 
+-- 4 teams have no formatting
+--p2 conditions, p3 conditions, etc
+--logic out all the red/yellow conditions, then otherwise default to green
+=Switch(
+
+--no color conditions
+(Fields!Support_Group.Value = "Aloha Support Team"
+    OR Fields!Support_Group.Value = "OnePOS Configuration"
+    OR Fields!Support_Group.Value = "R10 Hardware Support"
+    OR Fields!Support_Group.Value = "Aloha Data Configuration Team"), "No Color"
+
+ --p2 red
+,(Fields!Priority.Value=2 AND Fields!LoriAge.Value>=3 AND Fields!Support_Group.Value = "R10 Development" ),"Red"
+,(Fields!Priority.Value=2 AND Fields!LoriAge.Value>=2),"Red"
+
+--P3 red
+,(Fields!Priority.Value=3 AND Fields!LoriAge.Value>=21 AND Fields!Support_Group.Value = "R10 Development"),"Red"
+,(Fields!Priority.Value=3 AND Fields!LoriAge.Value>=4 AND Fields!Support_Group.Value = "Retail Support"),"Red"
+,(Fields!Priority.Value=3 AND Fields!LoriAge.Value>=6 AND Fields!Support_Group.Value = "Retail Support L2"),"Red"
+,(Fields!Priority.Value=3 AND Fields!LoriAge.Value>=14),"Red"
+
+--p3 yellow
+,(Fields!Priority.Value=3 AND Fields!LoriAge.Value>=19 AND Fields!Support_Group.Value = "R10 Development"),"Yellow"
+,(Fields!Priority.Value=3 AND Fields!LoriAge.Value>=2 AND Fields!Support_Group.Value = "Retail Support"),"Yellow"
+,(Fields!Priority.Value=3 AND Fields!LoriAge.Value>=4 AND Fields!Support_Group.Value = "Retail Support L2"),"Yellow"
+,(Fields!Priority.Value=3 AND Fields!LoriAge.Value>=4 AND Fields!Support_Group.Value = "OnePOS Call Back"),"Yellow"
+,(Fields!Priority.Value=3 AND Fields!LoriAge.Value>=8),"Yellow"
+
+
+--P4 red
+,(Fields!Priority.Value=4 AND Fields!LoriAge.Value>=21 AND Fields!Support_Group.Value = "R10 Development"),"Red"
+,(Fields!Priority.Value=4 AND Fields!LoriAge.Value>=5 AND Fields!Support_Group.Value = "Retail Support"),"Red"
+,(Fields!Priority.Value=4 AND Fields!LoriAge.Value>=8 AND Fields!Support_Group.Value = "Retail Support L2"),"Red"
+,(Fields!Priority.Value=4 AND Fields!LoriAge.Value>=14),"Red"
+
+--P4 Yellow
+,(Fields!Priority.Value=4 AND Fields!LoriAge.Value>=19 AND Fields!Support_Group.Value = "R10 Development"),"Yellow"
+,(Fields!Priority.Value=4 AND Fields!LoriAge.Value>=3 AND Fields!Support_Group.Value = "Retail Support"),"Yellow"
+,(Fields!Priority.Value=4 AND Fields!LoriAge.Value>=5 AND Fields!Support_Group.Value = "Retail Support L2"),"Yellow"
+,(Fields!Priority.Value=4 AND Fields!LoriAge.Value>=4 AND Fields!Support_Group.Value = "OnePOS Call Back"),"Yellow"
+,(Fields!Priority.Value=4 AND Fields!LoriAge.Value>=8),"Yellow"
+
+
+--default color
+,Count(Fields!Id.Value)>0,"Green"
+)
+
+
+/* Paste in */
+=Switch(
+
+(Fields!Support_Group.Value = "Aloha Support Team"
+    OR Fields!Support_Group.Value = "OnePOS Configuration"
+    OR Fields!Support_Group.Value = "R10 Hardware Support"
+    OR Fields!Support_Group.Value = "Aloha Data Configuration Team"), "No Color"
+
+
+	
+,(Fields!Priority.Value=2 AND Fields!LoriAge.Value>=3 AND Fields!Support_Group.Value = "R10 Development" ),"Red"
+,(Fields!Priority.Value=2 AND Fields!LoriAge.Value>=2),"Red"
+
+
+
+,(Fields!Priority.Value=3 AND Fields!LoriAge.Value>=21 AND Fields!Support_Group.Value = "R10 Development"),"Red"
+,(Fields!Priority.Value=3 AND Fields!LoriAge.Value>=4 AND Fields!Support_Group.Value = "Retail Support"),"Red"
+,(Fields!Priority.Value=3 AND Fields!LoriAge.Value>=6 AND Fields!Support_Group.Value = "Retail Support L2"),"Red"
+,(Fields!Priority.Value=3 AND Fields!LoriAge.Value>=14),"Red"
+
+
+
+,(Fields!Priority.Value=3 AND Fields!LoriAge.Value>=19 AND Fields!Support_Group.Value = "R10 Development"),"Yellow"
+,(Fields!Priority.Value=3 AND Fields!LoriAge.Value>=2 AND Fields!Support_Group.Value = "Retail Support"),"Yellow"
+,(Fields!Priority.Value=3 AND Fields!LoriAge.Value>=4 AND Fields!Support_Group.Value = "Retail Support L2"),"Yellow"
+,(Fields!Priority.Value=3 AND Fields!LoriAge.Value>=4 AND Fields!Support_Group.Value = "OnePOS Call Back"),"Yellow"
+,(Fields!Priority.Value=3 AND Fields!LoriAge.Value>=8),"Yellow"
+
+
+
+,(Fields!Priority.Value=4 AND Fields!LoriAge.Value>=21 AND Fields!Support_Group.Value = "R10 Development"),"Red"
+,(Fields!Priority.Value=4 AND Fields!LoriAge.Value>=5 AND Fields!Support_Group.Value = "Retail Support"),"Red"
+,(Fields!Priority.Value=4 AND Fields!LoriAge.Value>=8 AND Fields!Support_Group.Value = "Retail Support L2"),"Red"
+,(Fields!Priority.Value=4 AND Fields!LoriAge.Value>=14),"Red"
+
+
+
+,(Fields!Priority.Value=4 AND Fields!LoriAge.Value>=19 AND Fields!Support_Group.Value = "R10 Development"),"Yellow"
+,(Fields!Priority.Value=4 AND Fields!LoriAge.Value>=3 AND Fields!Support_Group.Value = "Retail Support"),"Yellow"
+,(Fields!Priority.Value=4 AND Fields!LoriAge.Value>=5 AND Fields!Support_Group.Value = "Retail Support L2"),"Yellow"
+,(Fields!Priority.Value=4 AND Fields!LoriAge.Value>=4 AND Fields!Support_Group.Value = "OnePOS Call Back"),"Yellow"
+,(Fields!Priority.Value=4 AND Fields!LoriAge.Value>=8),"Yellow"
+
+
+,Count(Fields!Id.Value)>0,"Green"
+)
+
+
+
+-- simplified coloring for "groups"
+
+=Switch(
+Fields!LoriAge.Value>=14,"Red"
+,Fields!LoriAge.Value>=8,"Yellow"
+,Count(Fields!Id.Value)>0,"Green" 
+)
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* ASSIGNED / UNASSIGNED FOR BUCKETS */
+
+Unassigned
+=Sum(CInt(IIF( Fields!Support_Group.Value = "Retail Support" And IsNothing(Fields!Assigned_To.Value), Fields!IncidentCount.Value  , Nothing)))
+
+
+Assigned
+=Sum(CInt(IIF( Fields!Support_Group.Value = "Retail Support", Fields!IncidentCount.Value  , Nothing))) - Sum(CInt(IIF( Fields!Support_Group.Value = "Retail Support" And IsNothing(Fields!Assigned_To.Value), Fields!IncidentCount.Value  , Nothing)))
+
+
+
+
+/* Report Item Expressions */
+=Sum(CInt(IIF( Fields!Support_Group.Value = "R10 War Room", Fields!IncidentCount.Value  , Nothing)))
+=Sum(CInt(IIF( Fields!Support_Group.Value = "Retail Support L2", Fields!IncidentCount.Value  , Nothing)))
+
+=ReportItems!Textbox1.Value
+
+
+
+
+
+
+
+/* Get columns and rows to appear even when there is a value of 0 */
+
+http://stackoverflow.com/questions/18626015/how-can-i-get-empty-columns-to-appear-in-ssrs-reports
+
+
+
+
+
+
+
+
+/* Extended Lori Request / L2 Snapshot */
+
+	/* Buckets per person, status */
+
+	=Sum(CInt(IIF( Fields!Status.Value = "Resolved", Fields!IncidentCount.Value  , Nothing)))
+
+	/* Calculating time assigned */
+
+	=IIF( (Fields!Status.Value<>"Closed" AND Fields!Status.Value<>"Resolved"), DateDiff("n",Fields!AssignedStartDate_CST.Value,Now()),nothing)
+	
+	/* Counting # tickets per analyst that have assigned times > 45 minutes */
+	
+	=Sum(CInt(IIF( IIF( (Fields!Status.Value<>"Closed" AND Fields!Status.Value<>"Resolved"), DateDiff("n",Fields!AssignedStartDate_CST.Value,Now()),nothing) >45 , Fields!IncidentCount.Value  , Nothing)))
+
+	
+
+
+
+
+
+
+/* Additional Date Calcs for datasets */
+
+-- YEAR
+=CInt( DatePart("yyyy",Fields!CreatedDate_CST.Value))
+
+-- MONTH
+=CInt( DatePart("m",Fields!CreatedDate_CST.Value))
+
+-- WEEK
+=DatePart(DateInterval.WeekOfYear,  Fields!resolved_cst.Value)-1
+
+-- DAY
+=CInt(Day(Fields!Resolved.Value))
+
+-- AGE
+=DateDiff("d",Fields!Created.Value, Now())
+
+
+
+
+/* Query Parameter Start / End Date Adjustments */
+
+-- START
+=DateAdd("h",DateDiff("h", Parameters!StartDate_BaseValue.Value.ToLocalTime(), Parameters!StartDate_BaseValue.Value), Parameters!StartDate_BaseValue.Value)
+
+-- end
+=DateAdd("h",DateDiff("h",  Parameters!EndDate_BaseValue.Value,  Parameters!EndDate_BaseValue.Value.ToUniversalTime() ),  Parameters!EndDate_BaseValue.Value)
+
+
+
+
+/* OnePOS Snapshot - Assigned / Unassigned within Support Group */
+
+-- assigned
+=Sum(CInt(IIF( Fields!Support_Group.Value = "Retail Support", Fields!IncidentCount.Value  , Nothing))) - Sum(CInt(IIF( Fields!Support_Group.Value = "Retail Support" And IsNothing(Fields!Assigned_To.Value), Fields!IncidentCount.Value  , Nothing)))
+
+-- unassigned
+=Sum(CInt(IIF( Fields!Support_Group.Value = "Retail Support" And IsNothing(Fields!Assigned_To.Value), Fields!IncidentCount.Value  , Nothing)))
+
+
+-- team no assigned/unassigned filter
+=Sum(CInt(IIF( Fields!Support_Group.Value = "OnePOS Call Back", Fields!IncidentCount.Value  , Nothing)))
+=Sum(CInt(IIF( Fields!Support_Group.Value = "OnePOS Call Back", Fields!IncidentCount.Value  , Nothing)))
+
+
+
+
+/* Resolved date remove #error */
+
+
+--returns true when there is no date
+=IsNothing(Fields!Resolved.Value)
+
+
+=IIF(IsNothing(Fields!Resolved.Value)=true,nothing,Fields!Resolved.Value.ToLocalTime())
+
+
+
+
+/* Analyst L2 Bucket - show total time worked if ticket has been resolved */
+
+=IIF(IsNothing(Fields!Resolved.Value),nothing,DateDiff("n",Fields!Assigned_Start_Date.Value,Fields!Resolved.Value))
+=DateDiff("n",Fields!Assigned_Start_Date.Value,Fields!Resolved.Value)
+
+
+
+
+/* Custom sort Analyst Assigned bucket - Call Back, then L2, then the rest in alpha */
+
+=Switch(
+Fields!Assigned_To.Value = "Call Back Needed", "A" + Fields!Assigned_To.Value,
+Fields!Assigned_To.Value = "Retail Support L2", "B" + Fields!Assigned_To.Value,
+Fields!Assigned_To.Value = "CE CEN Aloha Support Team", "C" + Fields!Assigned_To.Value,
+true, "Z" + Fields!Assigned_To.Value
+)
+
+=IIF( Fields!Assigned_To.Value = "Call Back Needed", "A" + Fields!Assigned_To.Value, "B" + Fields!Assigned_To.Value)
+
+
+
+/* Used to get blanks for no resolved dates In LT report (doesn't seem to work otherwise) */
+
+=IIF(
+	Fields!Resolved.Value is nothing, 
+	"", 
+	Code.FormatDateTime("g", Code.ToReportDate(Fields!Resolved.Value))
+	)
+	
+	
+=IIF(
+	Fields!Resolved.Value is nothing, 
+	"", 
+	FormatDateTime("g", ToReportDate(Fields!Resolved.Value))
+	)
+	
+	
+	
+/* Created and Resolved chart start / end dates adjusted */
+
+-- start date WITHOUT adjustment - correct time; (adjustment doesn't change )
+=DateAdd("d",-7,Today().ToUniversalTime())
+
+-- start date choose (with adjustment) - works with a default date selection in basevalue or user selected
+=DateAdd("h",DateDiff("h", Parameters!StartDate_BaseValue_CreatedAndResolved.Value.ToLocalTime(), Parameters!StartDate_BaseValue_CreatedAndResolved.Value.ToUniversalTime()), Parameters!StartDate_BaseValue_CreatedAndResolved.Value)
+
+
+-- end date right now no adjustment
+=Now().ToUniversalTime()
+
+-- end date choose (with adjustment)
+=DateAdd("h",DateDiff("h",  Parameters!EndDate_BaseValue_CreatedAndResolved.Value,  Parameters!EndDate_BaseValue_CreatedAndResolved.Value.ToUniversalTime() ),  Parameters!EndDate_BaseValue_CreatedAndResolved.Value)
+
+
+
+
+
+/* Wildcard text search filter - applied on table */
+
+-- data region filter
+[Title]
+LIKE
+="*"+Parameters!TextSearch1.Value+"*"
+
+
+
+
+/* Trying to get conditional formatting on Assigned / Resolve -> same per day */
+
+=Switch(
+Fields!Id.Value = 
+
+
+
+
+
+
+
+
+
+/* Sum <= 7 days and pct <= 7 days - changes formula based on team of record*/
+
+-- gets sum <= 7 days
+=Sum(Microsoft.VisualBasic.Interaction.IIf(Fields!LoriAge.Value <= 7, 1, 0))
+
+-- gets pct <= 7 days
+=Sum(Microsoft.VisualBasic.Interaction.IIf(Fields!LoriAge.Value <= 7, 1, 0)) / Count(Fields!LoriAge.Value)
+
+
+-- total <=3 days if OnePOS Call Back, or <=7 days else
+=iif(Fields!Support_Group.Value="OnePOS Call Back",
+	Sum(IIf(Fields!LoriAge.Value <= 3, 1, 0)),
+	Sum(IIf(Fields!LoriAge.Value <= 7, 1, 0))
+)
+
+-- pct <=3 days if OnePOS Call Back, or <=7 days else
+=iif(Fields!Support_Group.Value="OnePOS Call Back",
+	Sum(IIf(Fields!LoriAge.Value <= 3, 1, 0)) / Count(Fields!LoriAge.Value),
+	Sum(IIf(Fields!LoriAge.Value <= 7, 1, 0)) / Count(Fields!LoriAge.Value)
+)
+
+
+
+
+
+
+/* Conditional title (support group) display - uses next line in expression*/
+
+=IIF(Fields!Support_Group.Value = "OnePOS Call Back",
+	Fields!Support_Group.Value & Environment.NewLine & "(metrics using <= 3 days)",
+	Fields!Support_Group.Value
+	)
+	
+	
+/* Go to next line in expression; print line */
+Environment.NewLine
+
+
+
+
+/* Exclude false resolve dates - incidents that have resolve dates, but are active or pending, and are still assigned to a OnePOS team */
+
+=IIF(Fields!ACTION_TAKEN.Value="RESOLVED" 
+		And (Fields!CURRENT_STATUS.Value="Active" OR Fields!CURRENT_STATUS.Value="Pending") 
+		and IIf(InStr(Join(Parameters!SupportGroup.Label,","),Fields!CURRENT_SUPPORT_GROUP.Value)>0,true,false)
+	,false
+	,true
+	)
+	
+	
+/* List all parameter LABELS joined together in one string*/
+=Join(Parameters!SupportGroup.Label,", ")
+
+
+/* where attribute is IN a list (from the parameter) */
+=IIf(InStr(Join(Parameters!SupportGroup.Label,","),Fields!CURRENT_SUPPORT_GROUP.Value)>0,true,false)
+
+
+/* Filter by date = shortdate of parameter */
+=FormatDateTime(Parameters!StartDate_BaseValue_CreatedAndResolved.Value, DateFormat.ShortDate)
+
+
+
+
+
+/* finally answering the formatting null date time ? */
+
+=IIF(Fields!DiscontinuedDate.Value = ""
+    , ""
+    , FormatDateTime(IIf(Fields!DiscontinuedDate.Value = ""
+            , Nothing
+            , Fields!DiscontinuedDate.Value)
+        , DateFormat.ShortDate))
+		
+		
+=Fields!END_DATE.Value.ToLocalTime()		
+
+=IIF(Fields!END_DATE.Value is Nothing
+    ,nothing
+    ,IIf(Fields!END_DATE.Value = ""
+            , Nothing
+            , Fields!END_DATE.Value).ToLocalTime())
+			
+			
+=IIF(Fields!END_DATE.Value = ""
+    ,""
+    ,IIf(Fields!END_DATE.Value = ""
+            , Nothing
+            , Fields!END_DATE.Value).ToLocalTime())
+			
+=IIF(Fields!END_DATE.Value = ""
+    ,""
+    ,FormatDateTime(iif(Fields!END_DATE.Value = ""
+            , Nothing
+            , Fields!END_DATE.Value)
+		,DateFormat.ShortDate)
+)
+
+
+
+/* Analyst Assigned Tickets - age calculations */
+
+-- time assigned
+=IIF((Fields!CURRENT_STATUS.Value <> "Closed" And Fields!CURRENT_STATUS.Value <> "Resolved"), 
+	DateDiff("n", Fields!start_cst.Value, Microsoft.VisualBasic.DateAndTime.Now), 
+	Nothing)
+
+	-- NEW; for use of specific points in time
+	=IIF( (Fields!CURRENT_STATUS.Value<>"Closed" AND Fields!CURRENT_STATUS.Value<>"Resolved"), 
+	DateDiff(
+			"n",
+			Fields!start_cst.Value,
+			iif( Parameters!Date.Value>Now(),
+				Now(),
+				Parameters!Date.Value)),
+	nothing)
+
+-- time worked
+=IIF(IsNothing(Fields!RESOLVED_DATE.Value),nothing,DateDiff("n",Fields!START_DATE.Value,Fields!RESOLVED_DATE.Value))
+
+	-- NEW
+		=IIF(Fields!Status.Value="Active" OR Fields!Status.Value="Pending"
+		,nothing
+		,DateDiff("n",Fields!Assigned_Start_Date.Value,Fields!Resolved.Value))
+
+		
+		
+-- # of active and pending tickets >= 45 minutes assigned
+	 -- > 45 min
+	 =Sum(CInt(IIF( IIF( (Fields!Status.Value<>"Closed" AND Fields!Status.Value<>"Resolved"), 
+							DateDiff("n",Fields!AssignedStartDate_CST.Value,iif( 
+												Parameters!Date.Value>Now(),
+												Now(),
+												Parameters!Date.Value)
+									),nothing) >45 , Fields!IncidentCount.Value  , Nothing)))
+									
+-- age of incident by exact hour
+=DateDiff("d",Fields!Created.Value, Now())
+
+-- lori age - by day?
+=CInt(DateDiff("d",Fields!CreatedDate_CST.Value, Today()))
+
+
+
+/* FILTER OUT RESOLVED RECORDS THAT ARE NOT CURRENTLY RESOLVED OR CLOSED */
+
+=iif(Fields!ACTION_TAKEN.Value="RESOLVED" and (Fields!CURRENT_STATUS.Value <> "Resolved" And Fields!CURRENT_STATUS.Value <> "Closed"), false, true)
+
+
+
+/* line style for ssrs chart like excel chart with data table - show axis only for first chart */
+
+=iif(Fields!Date_CST.Value = Min(Fields!Date_CST.Value, "CreatedAndResolved"),"Solid","None")
+
+
+
+
+
+
+
+/* dynamic maximum axis value based on max value of created or resolve sum of incidents */
+
+ -- example
+=Sum(
+	IIF(
+		(Fields!Program.Value = "FC" And Fields!Program.OtherValue = "XX"), 
+		Fields!QuantityToShip.Value, 
+		0
+	)
+)
+
+
+ -- solve...
+Sum(Count(Fields!Id.Value)) = 
+Max(Sum(Count(Fields!Id.Value)), "CreatedAndResolved")
+OR
+Sum(Count(Fields!Id.Value)) =
+Max(Sum(Count(Fields!Id.Value)), "CreatedAndResolved")
+
+
+iif(Fields!ACTION_TAKEN.Value = "CREATED",Sum(Count(Fields!Id.Value)))
+iif(Fields!ACTION_TAKEN.Value = "RESOLVED", Sum(Count(Fields!Id.Value)))
+
+
+
+
+ -- neither of the following work
+=iif(
+
+iif(Fields!ACTION_TAKEN.Value = "CREATED", Max(Sum(Count(Fields!Id.Value, "CreatedAndResolved"))),Nothing) >
+iif(Fields!ACTION_TAKEN.Value = "RESOLVED", Max(Sum(Count(Fields!Id.Value, "CreatedAndResolved"))),Nothing)
+,
+iif(Fields!ACTION_TAKEN.Value = "CREATED", 1.2 * Max(Sum(Count(Fields!Id.Value, "CreatedAndResolved")) ),Nothing),
+iif(Fields!ACTION_TAKEN.Value = "RESOLVED", 1.2 *  Max(Sum(Count(Fields!Id.Value,  "CreatedAndResolved")) ),Nothing)
+)
+
+
+=iif(
+
+iif(Fields!ACTION_TAKEN.Value = "CREATED", Max(Sum(Count(Fields!Id.Value)),  "CreatedAndResolved"),Nothing) >
+iif(Fields!ACTION_TAKEN.Value = "RESOLVED", Max(Sum(Count(Fields!Id.Value)),  "CreatedAndResolved"),Nothing)
+,
+iif(Fields!ACTION_TAKEN.Value = "CREATED", 1.2 * Max(Sum(Count(Fields!Id.Value)) ,  "CreatedAndResolved"),Nothing),
+iif(Fields!ACTION_TAKEN.Value = "RESOLVED", 1.2 *  Max(Sum(Count(Fields!Id.Value)) ,  "CreatedAndResolved"),Nothing)
+)
+
+
+
+ -- maybe somehting with chart group
+ =Max(Sum(Count(Fields!Id.Value)),"ACTION_TAKEN")
+ 
+ 
+  -- trying ...
+ =1.2 * 
+ Max(Sum(Count(Fields!Id.Value)),"ACTION_TAKEN")
+ 
+ =iif ( Fields!ACTION_TAKEN.Value = "CREATED",
+ Max(Sum(Count(Fields!Id.Value)),"CreatedAndResolved")
+ 
+ )
+ 
+ 
+ -- maybe something with this?
+=iif(MIN(Sum(Fields!ForecastAmt.Value,"Chart3_CategoryGroup2"))<0,(MIN(Sum(Fields!ForecastAmt.Value,"Chart3_CategoryGroup2"))*1.2),Nothing)
+
+=IIf(Max(CountRows("MonthGroup")) <= 5, 1, Nothing)
+
+
+
+
+=1.2 * Max(Sum(Count(Fields!Id.Value)),"ACTION_TAKEN")
+
+
+
+
+/* countif count if functionality */
+=Sum(IIf(Fields!ConfirmedValue.Value, 1, 0), "KPI_Calculation") / CountRows("KPI_Calculation")
+
+
+=iif(
+Sum(iif(Fields!ACTION_TAKEN.Value="CREATED",1,0),"CreatedAndResolved") >
+Sum(iif(Fields!ACTION_TAKEN.Value="RESOLVED",1,0),"CreatedAndResolved"),
+Sum(iif(Fields!ACTION_TAKEN.Value="CREATED",1,0),"CreatedAndResolved"),
+Sum(iif(Fields!ACTION_TAKEN.Value="RESOLVED",1,0),"CreatedAndResolved")
+)
+
+=iif(Fields!ACTION_TAKEN.Value="CREATED",iif(Fields!Date_CST,0)
+
+
+=Sum(iif(
+InScope("Date_CST")=Fields!Date_CST.Value,
+1,
+0
+), "CreatedAndResolved"
+
+
+=max(Count(Fields!Id.Value), "Date_CST"), "ACTION_TAKEN")
+
+
+
+
+
+/* Timezone change query parameter - set query parameter equal to expression using the given report parameter changed to correct timezone */
+
+=Parameters!StartDate_BaseValue.Value.ToUniversalTime()
+
+=DateAdd("h",DateDiff("h", Parameters!EndDate_BaseValue.Value.ToLocalTime(), Parameters!EndDate_BaseValue.Value.ToUniversalTime()), Parameters!EndDate_BaseValue.Value)
+
+
+
+
+/* ToLocalTime() timezone conversion on resolved time in Gold R10 Incidents report (that somehow removes the #Error) */
+/* Refer to Code from Gold R10 Incidents */
+
+=IIF(
+	Fields!Resolved.Value is nothing, 
+	"", 
+	Code.FormatDateTime("g", Code.ToReportDate(Fields!Resolved.Value))
+	)
+
+
+	
+/* Created Resolved Chart report title line specifying teams */
+
+= "- "
+& iif(Parameters!SupportGroup.Count = 1, 
+	Join(Parameters!SupportGroup.Label,", "), 
+	Parameters!SupportGroup.Count & " Teams")
+	
+	
+	
+	
+/* OnePOS Snapshot Report 2 */
+
+/* grouping/collapsing aging tickets chart */
+
+=IIf(Count(Fields!Id.Value)=0,Nothing,Count(Fields!Id.Value))
+
+=Switch(
+Count(Fields!Id.Value)=0,Nothing,
+Fields!LoriAge.Value <= 14, Count(Fields!Id.Value)
+)
+
+
+
+
+
+
+
+
+
+/* opsr 2 - mimic the functionality of IN operator for SSRS expressions */
+
+ -- where support group (team) in (list)
+=IIF(InStr("Aloha Support Team,Aloha Data Configuration Team", Fields!Support_Group.Value ) > 0,True,False)
+
+
+
+
+
+/* active/pending ticket chart - count number less than 7 days, find pct less than 7 days */
+-- <3 days for call back, <7 days for everything else
+
+-- total #
+=iif(Fields!Support_Group.Value="OnePOS Call Back",
+	Sum(IIf(Fields!LoriAge.Value <= 3, 1, 0)),
+	Sum(IIf(Fields!LoriAge.Value <= 7, 1, 0))
+)
+
+-- pct
+=iif(Fields!Support_Group.Value="OnePOS Call Back",
+	Sum(IIf(Fields!LoriAge.Value <= 3, 1, 0)) / Count(Fields!LoriAge.Value),
+	Sum(IIf(Fields!LoriAge.Value <= 7, 1, 0)) / Count(Fields!LoriAge.Value)
+)
+
+
+-- flat 7day calculations
+
+-- total #
+=Sum(IIf(Fields!LoriAge.Value <= 7, 1, 0))
+-- pct
+=Sum(IIf(Fields!LoriAge.Value <= 7, 1, 0)) / Count(Fields!LoriAge.Value)
+
+
+
+/* **************************************************************** */
+-- ACTUAL ANSWER TO HOW TO RETURN BLANK IF DATE CONVERSION IS NULL
+/* **************************************************************** */
+
+		-- END_DATE RETURNS BLANK IF NO VALUE - YEAR IS 0001
+		
+		-- ENDDATE_CST
+		=iif(
+			Year(
+				Fields!END_DATE.Value
+				) = 0001, 
+			"", 
+			System.TimeZone.CurrentTimeZone.ToLocalTime(Fields!END_DATE.Value)
+			)
+			
+
+		-- RESOLVED_CST
+		=iif(
+			Year(
+					Fields!RESOLVED.Value
+				) = 0001, 
+				"", 
+				System.TimeZone.CurrentTimeZone.ToLocalTime(Fields!RESOLVED.Value)
+			)
+	
+	
+	
+	/* ****************************************************************** */
+	/* Short Date Conversion of field with possible nulls, without #Error */
+	/* ****************************************************************** */
+
+		
+		-- ENDDATE_DATE_CST FORMULA
+		=iif(
+			Year(
+				Fields!END_DATE.Value
+				) = 0001, 
+			"", 
+			FormatDateTime(
+				System.TimeZone.CurrentTimeZone.ToLocalTime(Fields!END_DATE.Value),
+				DateFormat.ShortDate
+				)
+			)
+		-- USE THIS ONE --	
+		-- ENDDATE_DATE_CST FORMULA - DATE CONVERSION
+		=iif(
+			Year(
+				Fields!END_DATE.Value
+				) = 0001, 
+			"", 
+			CDate(
+				FormatDateTime(
+					System.TimeZone.CurrentTimeZone.ToLocalTime(Fields!END_DATE.Value),
+					DateFormat.ShortDate
+					)
+				)
+			)
+/* */	
+
+	
+	
+	
+
+	
+	
+
+
+
+
+/* row visibility hide on condition */
+
+=iif(
+	Sum(
+		CInt(
+			IIF( 
+				Fields!Support_Group.Value = "Aloha Hardware Support", 
+				Fields!IncidentCount.Value, 
+				Nothing
+				)
+			)
+		) = 0, True, False
+	)
+
+	
+	
+
+	
+/* FLAGS FOR TRANSFER OR RESOLVE ON SAME DAY AS DATE PARAMETER CHOSEN */
+	
+	
+-- TRANSFER FLAG - TAKE 2 - still shows #Error but fine for aggregating purposes
+=IIF(
+	Year(
+		Fields!end_cst.Value
+		)=1,
+	"",
+	IIF(
+		Fields!end_cst_date.Value =	CDate(FormatDateTime(Parameters!Date.Value,DateFormat.ShortDate)) ,
+		1,
+		0
+		)
+	)
+
+	
+-- resolve flag - ONLY IF SAME USER - converts @date parameter to shortdate date type
+=iif(
+	Fields!resolved_cst_date.Value = CDate(FormatDateTime(Parameters!Date.Value,DateFormat.ShortDate)) And Fields!RESOLVED_USER.Value=Fields!ASSIGNED_TO.Value,
+	1,
+	0
+	)
+
+
+-- resolve color flag where the resolve DATE is the same as parameter @Date and the resolve user is the same as the assigned user
+=iif(
+	CDate(Fields!ResolvedDate_CST.Value)=CDate(FormatDateTime( Parameters!Date.Value , DateFormat.ShortDate)) 
+		And Fields!Resolved_by.Value=Fields!Assigned_To.Value,
+	"Green",
+	Nothing
+	)
+
+	
+-- Flag records of interest that occur on same day (CST)
+=iif( Fields!start_cst_date.Value <= CDate(FormatDateTime( Parameters!Date.Value , DateFormat.ShortDate))
+			And Fields!end_cst_date.Value >= CDate(FormatDateTime( Parameters!Date.Value , DateFormat.ShortDate)),
+			1,
+			0
+	)
+
+
+
+	=Switch(
+		Fields!RESOLVED_DATE_CST.Value=Parameters!Date.Value And Fields!RESOLVED_USER.Value=Fields!ASSIGNED_TO.Value,"Green",
+		Fields!RESOLVED_DATE_CST.Value=Parameters!Date.Value,"Blue",
+		Not(IsNothing(Fields!RESOLVED.Value)),"Yellow",
+		IsNothing(Fields!RESOLVED.Value), "White"
+		)
+	
+	
+
+-- transfer flag; convert datetime to date value 
+=iif(
+	CDate(FormatDateTime(Parameters!Date.Value,DateFormat.ShortDate)) = Fields!AssignedEndDate_Date_CST.Value,
+	"Green",
+	"Yellow"
+	)
+	
+-- resolved flag
+	=iif(
+	CDate(FormatDateTime(Parameters!Date.Value,DateFormat.ShortDate)) = AssignedEndDate_Date_CST,
+	"Green",
+	"Yellow"
+	)
+	
+	
+	
+/* ********************************************************************* */	
+/* datetime and date conversions for date field that is potentially null */	
+/* assigned end/resolved (potential null) date cst, or blank if null (year 1) */
+/* ********************************************************************* */
+	=iif(
+	Year(
+		System.TimeZone.CurrentTimeZone.ToLocalTime(Fields!NEXT_START_DATE.Value)
+		) = 0001, 
+		"", 
+		System.TimeZone.CurrentTimeZone.ToLocalTime(Fields!NEXT_START_DATE.Value)
+	)
+	
+	-- assigned end date / resolved DATE (potential null) cst, format shortdate and converting to date
+=iif(
+	Year(
+		System.TimeZone.CurrentTimeZone.ToLocalTime(Fields!NEXT_START_DATE.Value)
+		) = 0001, 
+		"", 
+		CDate(FormatDateTime( System.TimeZone.CurrentTimeZone.ToLocalTime(Fields!NEXT_START_DATE.Value) , DateFormat.ShortDate))
+		)
+		
+		
+
+
+/* Inclusion condition in SSRS Report */
+/* Perform all datetime conversions and checks in this step */
+/* Have to perform localtime conversion on end date */
+/* null times return a year of 1 */
+/
+=Year(System.TimeZone.CurrentTimeZone.ToLocalTime( Fields!END_DATE.Value)) = 1 
+	OR CDate(FormatDateTime(System.TimeZone.CurrentTimeZone.ToLocalTime( Fields!END_DATE.Value), DateFormat.ShortDate)) 
+		>= CDate(FormatDateTime(Parameters!Date.Value,DateFormat.ShortDate))
+	
+		
+
+	
+	
+	
+	
+	-- resolve time if the assigned user was the one that resolved it
+	-- RESOLVED FLAG + TIME WORKED EXPRESSIONS
+=iif(
+	Fields!resolved_cst_date.Value = CDate(FormatDateTime(Parameters!Date.Value,DateFormat.ShortDate)) And Fields!RESOLVED_USER.Value=Fields!ASSIGNED_TO.Value,
+	1,
+	0
+	)
+	
+	
+	=IIF(IsNothing(Fields!RESOLVED_DATE.Value),nothing,DateDiff("n",Fields!START_DATE.Value,Fields!RESOLVED_DATE.Value))
+	
+=iif(	
+	IsNothing(Fields!RESOLVED_DATE.Value) = FALSE AND Fields!RESOLVED_USER.Value=Fields!ASSIGNED_TO.Value,
+	DateDiff("n",Fields!START_DATE.Value,Fields!RESOLVED_DATE.Value),
+	Nothing
+	)
+	
+	
+	
+	
+-- transfer conditional coloring
+	=IIF(
+			Year(
+				Fields!end_cst.Value
+				)=1,
+			"",
+			IIF(
+				Fields!end_cst_date.Value =	CDate(FormatDateTime(Parameters!Date.Value,DateFormat.ShortDate)) ,
+				"PaleGreen",
+				nothing
+				)
+			)
+			
+-- resolve by same user conditional coloring
+=iif(
+	Fields!resolved_cst_date.Value = CDate(FormatDateTime(Parameters!Date.Value,DateFormat.ShortDate)) And Fields!RESOLVED_USER.Value=Fields!ASSIGNED_TO.Value,
+	"Violet",
+	nothing
+	)
+	
+	
+/* *****************************************************************  */
+/* L2 Queues and Handling Report - counters for Transfer and Resolved */
+/* *****************************************************************  */
+-- transfer counter value. need to calculate with orig date for no #Error	
+	=IIF(
+			Year(
+				Fields!end_cst.Value
+				)=1,
+			"",
+			IIF(
+				Fields!end_cst_date.Value =	CDate(FormatDateTime(Parameters!Date.Value,DateFormat.ShortDate)) ,
+				1,
+				0
+				)
+			)
+-- resolve counter value
+=iif(
+	Fields!resolved_cst_date.Value = CDate(FormatDateTime(Parameters!Date.Value,DateFormat.ShortDate)) And Fields!RESOLVED_USER.Value=Fields!ASSIGNED_TO.Value,
+	1,
+	0
+	)
+	
+-- OLD analyst time worked (does not account for assigned user resolving)
+=IIF(IsNothing(Fields!RESOLVED_DATE.Value),nothing,DateDiff("n",Fields!START_DATE.Value,Fields!RESOLVED_DATE.Value))
+
+
+
+
+-- time assigned / assigned time - either between start/end or start/now if still assigned (and open)
+
+=IIF((Fields!CURRENT_STATUS.Value <> "Closed" And Fields!CURRENT_STATUS.Value <> "Resolved"), 
+	DateDiff("n", Fields!start_cst.Value, Microsoft.VisualBasic.DateAndTime.Now), 
+	Nothing)
+	
+	
+=IIF((Fields!CURRENT_STATUS.Value <> "Closed" And Fields!CURRENT_STATUS.Value <> "Resolved"), 
+	DateDiff("n", Fields!start_cst.Value, Microsoft.VisualBasic.DateAndTime.Now), 
+	iif(IsNothing(Fields!END_DATE.Value)=FALSE,
+		DateDiff("n",Fields!START_DATE.Value, Fields!END_DATE.Value),
+		nothing
+		)
+	)
+	
+	
+	
+	
+-- assigned queues and handling
+-- time assigned 
+-- add check for transfer - perform difference with start/end times instead 	
+=IIF(
+	(Fields!CURRENT_STATUS.Value <> "Closed" And Fields!CURRENT_STATUS.Value <> "Resolved" And IsNothing(Fields!END_DATE.Value)), 
+	DateDiff("n", Fields!start_cst.Value, Microsoft.VisualBasic.DateAndTime.Now), 
+	iif(
+		Fields!CURRENT_STATUS.Value <> "Closed" And Fields!CURRENT_STATUS.Value <> "Resolved",
+		DateDiff("n", Fields!START_DATE.Value, Fields!END_DATE.Value),
+		Nothing
+	)
+)
+	
+	
+	
+	
+	
+=Sum(
+	CInt(
+		IIF(
+			Fields!Support_Group.Value = "Retail Support", Fields!IncidentCount.Value  , Nothing
+			)
+		)
+	) - Sum(CInt(IIF( Fields!Support_Group.Value = "Retail Support" And IsNothing(Fields!Assigned_To.Value), Fields!IncidentCount.Value  , Nothing)))
+
+	
+
+	
+/* reference report items */
+=(ReportItems!Textbox26.Value - ReportItems!Textbox77.Value) / ReportItems!Textbox77.Value
+
+
+
+
+
+/* filter out resolved items that were not resolved on day of choice */
+
+-- EXCLUDE FLAG 1
+-- want to exclude records that have been resolved but with a different resolve date
+
+		=iif(
+			Year(
+				Fields!RESOLVED_DATE.Value
+				) 
+			= 0001, 
+			1, 
+			IIF(
+				CDate(
+					FormatDateTime(
+						System.TimeZone.CurrentTimeZone.ToLocalTime(Fields!RESOLVED_DATE.Value),
+						DateFormat.ShortDate
+						)
+						=
+						Not(Parameters!Date.Value),
+						1,
+						0
+					)
+				)
+			)
+			
+			
+=Year(System.TimeZone.CurrentTimeZone.ToLocalTime( Fields!END_DATE.Value)) = 1 
+	OR CDate(FormatDateTime(System.TimeZone.CurrentTimeZone.ToLocalTime( Fields!END_DATE.Value), DateFormat.ShortDate)) 
+		>= CDate(FormatDateTime(Parameters!Date.Value,DateFormat.ShortDate))
+		
+		
+	
+	
+	
+-- checks if there's a resolve date
+IsNothing(Fields!RESOLVED_DATE.Value) 
+
+
+--compares resolve date with parameter
+=iif(	
+	CDate(FormatDateTime(System.TimeZone.CurrentTimeZone.ToLocalTime( Fields!RESOLVED_DATE.Value), DateFormat.ShortDate)) 
+		<> CDate(FormatDateTime(Parameters!Date.Value,DateFormat.ShortDate))
+	,1
+	,0)
+	
+-- checks if there's no resolve date (include), then check if the res date <> @date (exclude)
+=iif(
+	IsNothing(Fields!RESOLVED_DATE.Value)
+	, 1
+	,iif(	
+		CDate(FormatDateTime(System.TimeZone.CurrentTimeZone.ToLocalTime( Fields!RESOLVED_DATE.Value), DateFormat.ShortDate)) 
+			<> CDate(FormatDateTime(Parameters!Date.Value,DateFormat.ShortDate))
+	,0
+	,1)
+	)
+
+	
+	
+	
+-- tablix parameters
+1. start date cst <= @date 
+2. end date is nothing OR end date >= @date
+3. Assigned to = @Analyst ... ( dataset grabbing appropriate range)
+4. If the current status = @Status
+5. Exclude if there is no resolve date, but the status is resolved (to filter out anomalies)
+6. Exclude records with resolve date and the resolve date <> param date 
+
+
+
+=IIf(InStr(Join(Parameters!Status.Label,","),Fields!CURRENT_STATUS.Value)>0,true,false)
+
+
+
+/*
+if resolved on that day
+if resolved user <> assigned user
+gray
+*/
+	,iif(	
+		CDate(FormatDateTime(System.TimeZone.CurrentTimeZone.ToLocalTime( Fields!RESOLVED_DATE.Value), DateFormat.ShortDate)) 
+			<> CDate(FormatDateTime(Parameters!Date.Value,DateFormat.ShortDate))
+			
+=iif( IsNothing(Fields!RESOLVED_DATE.Value)=false And
+(Fields!ASSIGNED_TO.Value <> Fields!RESOLVED_USER.Value),
+
+)
+
+-- checks for nothing. flag 1 if true
+iif(IsNothing(Fields!RESOLVED_DATE.Value),1,0) 
+
+
+
+--old resolve coloring
+=iif(
+	Fields!resolved_cst_date.Value = CDate(FormatDateTime(Parameters!Date.Value,DateFormat.ShortDate)) And Fields!RESOLVED_USER.Value=Fields!ASSIGNED_TO.Value,
+	"Violet",
+	nothing
+	)
+
+	-- new resolve coloring
+=iif(
+	Fields!resolved_cst_date.Value = CDate(FormatDateTime(Parameters!Date.Value,DateFormat.ShortDate)) And Fields!RESOLVED_USER.Value=Fields!ASSIGNED_TO.Value,
+	"Resolved",
+	iif(
+		Fields!resolved_cst_date.Value = CDate(FormatDateTime(Parameters!Date.Value,DateFormat.ShortDate)) And Fields!RESOLVED_USER.Value<>Fields!ASSIGNED_TO.Value,
+		"Resolved by Other",
+		nothing
+		)
+	)
+	
+	
+	
+/* Add border before and after each row group - set top border */
+
+=Iif(Fields!ASSIGNED_TO.Value = Previous(Fields!ASSIGNED_TO.Value) OR Fields!ASSIGNED_TO.Value = First(Fields!ASSIGNED_TO.Value, "L2_Queues_and_Handling"),3,1)
+
+
+
+
+/* resolve flag - text version */
+=iif(
+	Fields!resolved_cst_date.Value = CDate(FormatDateTime(Parameters!Date.Value,DateFormat.ShortDate)) And Fields!RESOLVED_USER.Value=Fields!ASSIGNED_TO.Value,
+	"Violet",
+	iif(
+		Fields!resolved_cst_date.Value = CDate(FormatDateTime(Parameters!Date.Value,DateFormat.ShortDate)) And Fields!RESOLVED_USER.Value<>Fields!ASSIGNED_TO.Value,
+		"Silver",
+		nothing
+		)
+	)
+	
+	
+
+	-- for aggregating
+	
+=sum(
+	IIF(
+			Year(
+				Fields!end_cst.Value
+				)
+			=1,
+			0,
+			IIF(
+				Fields!end_cst_date.Value =	CDate(FormatDateTime(Parameters!Date.Value,DateFormat.ShortDate)) ,
+				1,
+				0
+				)
+			)
+		)
+		
+		
+		
+		
+		
+/* robust formula - checks if <END/RESOLVE/POTENTIAL NULL> date = @date. Returns no #Error */
+=SUM(
+	IIF(		
+		CDate(FormatDateTime(System.TimeZone.CurrentTimeZone.ToLocalTime( Fields!END_DATE.Value), DateFormat.ShortDate)) 
+					= CDate(FormatDateTime(Parameters!Date.Value,DateFormat.ShortDate)),
+					1,
+					0
+		)
+	)
+	
+	
+	
+=Sum(
+	IIF(
+		Fields!CURRENT_STATUS.Value <> "Closed" And Fields!CURRENT_STATUS.Value <> "Resolved",
+		1,
+		0
+		)
+	)
+	
+	
+
+
+
+	
+
+	=iif(
+		CDate(FormatDateTime(System.TimeZone.CurrentTimeZone.ToLocalTime( Fields!RESOLVED_DATE.Value), DateFormat.ShortDate)) 
+			= CDate(FormatDateTime(Parameters!Date.Value,DateFormat.ShortDate)) 
+			And Fields!RESOLVED_USER.Value<>Fields!ASSIGNED_TO.Value,
+		"Resolved by Other",
+		nothing
+		)
+/* * */
+
+
+
+
+
+
+--get time assigned from EOD status time 
+--determine if RIGHT NOW or the historical status time is sooner. Choose the sooner one.
+
+
+-- check if an incident is NOT closed and NOT resolved, AND has no end date
+-- if true, find the difference between start of assignment and (EOD 9pm or right now), whichever is sooner
+-- otherwise if just Not resolved and Not closed, find the difference between start and end times
+-- "TOTAL TIME ASSIGNED" 
+=IIF(
+		(Fields!CURRENT_STATUS.Value <> "Closed" And Fields!CURRENT_STATUS.Value <> "Resolved" And IsNothing(Fields!END_DATE.Value)
+		), 
+		DateDiff(
+			"n", 
+			Fields!start_cst.Value, 
+			iif(CDate(Format( Parameters!Date.Value, "MM/dd/yyyy") & " 9:00 PM")>Now(),
+				Now(),
+				CDate(Format( Parameters!Date.Value, "MM/dd/yyyy") & " 9:00 PM"))
+				), 
+		iif(
+			Fields!CURRENT_STATUS.Value <> "Closed" And Fields!CURRENT_STATUS.Value <> "Resolved",
+			DateDiff("n", Fields!START_DATE.Value, Fields!END_DATE.Value),
+			Nothing
+		)
+	)
+
+
+
+	
+-- simplified version of above 
+	=IIF((Fields!CURRENT_STATUS.Value <> "Closed" And Fields!CURRENT_STATUS.Value <> "Resolved")
+		,IIF(IsNothing(Fields!END_DATE.Value),
+			DateDiff(
+				"n", 
+				Fields!start_cst.Value, 
+				iif(CDate(Format( Parameters!Date.Value, "MM/dd/yyyy") & " 9:00 PM")>Now(),
+					Now(),
+					CDate(Format( Parameters!Date.Value, "MM/dd/yyyy") & " 9:00 PM"))
+				),				
+			DateDiff(
+				"n", 
+				Fields!START_DATE.Value, 
+				Fields!END_DATE.Value
+				)			
+			)
+		,Nothing
+		)
+				
+	
+
+-- assigned time as of day
+
+=iif(CDate(FormatDateTime(System.TimeZone.CurrentTimeZone.ToLocalTime( Fields!END_DATE.Value), DateFormat.ShortDate)) 
+					= CDate(FormatDateTime(Parameters!Date.Value,DateFormat.ShortDate))
+	,DateDiff(
+			"n", 
+			Fields!START_DATE.Value, 
+			Fields!END_DATE.Value
+			)
+	,DateDiff(
+		"n", 
+		Fields!start_cst.Value, 
+		iif(CDate(Format( Parameters!Date.Value, "MM/dd/yyyy") & " 9:00 PM")>Now(),
+			Now(),
+			CDate(Format( Parameters!Date.Value, "MM/dd/yyyy") & " 9:00 PM"))
+			)
+		)	
+-- time assigned to 'present moment' of report 
+
+
+
+
+/* Dataset flag - if trasferred on same day as assigned */
+=SUM(
+	IIF(		
+		CDate(FormatDateTime(System.TimeZone.CurrentTimeZone.ToLocalTime( Fields!END_DATE.Value), DateFormat.ShortDate)) 
+					= CDate(FormatDateTime(Parameters!Date.Value,DateFormat.ShortDate)),
+					1,
+					0
+		)
+	)
+	
+	
+	
+/* week based resolved flag limit */
+=iif(
+	IsNothing(Fields!RESOLVED_DATE.Value) 
+	, 1
+	,iif(	
+		CDate(FormatDateTime(System.TimeZone.CurrentTimeZone.ToLocalTime( Fields!RESOLVED_DATE.Value), DateFormat.ShortDate)) 
+			< CDate(FormatDateTime(Parameters!Date0.Value,DateFormat.ShortDate))
+	,0
+	,1)
+	)
+	
+	
+/* day transfer flag */
+=IIF(
+			Year(
+				Fields!end_cst.Value
+				)=1,
+			"",
+			IIF(
+				Fields!end_cst_date.Value =	CDate(FormatDateTime(Parameters!Date.Value,DateFormat.ShortDate)) ,
+				"LightGreen",
+				nothing
+				)
+			)
+			
+			
+			
+
+/* day of resolve/ transfer */			
+CDate(FormatDateTime(System.TimeZone.CurrentTimeZone.ToLocalTime( Fields!RESOLVED_DATE.Value), DateFormat.ShortDate))
+CDate(FormatDateTime(System.TimeZone.CurrentTimeZone.ToLocalTime( Fields!END_DATE.Value), DateFormat.ShortDate))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+=IIF(
+			Year(
+				Fields!END_DATE.Value
+				)=1,
+			"",
+			IIF(
+				Fields!end_cst_date.Value =	CDate(FormatDateTime(Parameters!Date.Value,DateFormat.ShortDate)) ,
+				"LightGreen",
+				nothing
+				)
+			)
+
+
+
+
+
+
+			
+-- CAN DELETE
+
+
+-- time assigned
+=IIF(
+			Year(
+				Fields!START_DATE.Value
+				)=1
+			OR
+			Year(
+				Fields!END_DATE.Value
+				)=1			
+			,
+			"",
+			DateDiff("n",Fields!START_DATE.Value,Fields!END_DATE.Value)
+	)
+
+-- time worked
+=IIF(		
+			Year(
+				Fields!ASSIGNED_START.Value
+				)=1
+			OR
+			Year(
+				Fields!RESOLVED_DATE.Value
+				)=1	
+			,
+			"",
+			DateDiff("n",Fields!ASSIGNED_START.Value,Fields!RESOLVED_DATE.Value)
+	)
+	
+	
+	
+	
+	
+	d h m
+	time already in minutes
+	days? min / daymin(1440)
+	hours? min / 
+	
+	2000
+	1 day
+	9 hours
+	20 mins
+	
+	
+
+-- perfect time difference formatting
+--time_assigned 
+=iif(floor(Fields!time_assigned.Value / 1440)=0,
+	"",
+	FORMAT(floor(Fields!time_assigned.Value / 1440), "0") & "d "
+)
+&
+iif(
+floor((Fields!time_assigned.Value MOD 1440) / 60)=0 and floor(Fields!time_assigned.Value / 1440)=0,
+	"",
+	FORMAT(floor((Fields!time_assigned.Value MOD 1440) / 60), "0") & "h "
+)
+& FORMAT(Fields!time_assigned.Value MOD 60, "0#") & "m"
+
+--time_worked
+=iif(floor(Fields!time_worked.Value / 1440)=0,
+	"",
+	FORMAT(floor(Fields!time_worked.Value / 1440), "0") & "d "
+)
+&
+iif(
+floor((Fields!time_worked.Value MOD 1440) / 60)=0 and floor(Fields!time_worked.Value / 1440)=0,
+	"",
+	FORMAT(floor((Fields!time_worked.Value MOD 1440) / 60), "0") & "h "
+)
+& FORMAT(Fields!time_worked.Value MOD 60, "0#") & "m"
+
+
+
+
+
+-- 
+=iif(
+			Year(
+				Fields!START_DATE.Value
+				) = 0001, 
+			"", 
+			CDate(
+				FormatDateTime(
+					System.TimeZone.CurrentTimeZone.ToLocalTime(Fields!START_DATE.Value),
+					DateFormat.ShortDate
+					)
+				)
+			)
+			
+
+			
+			
+			
+-- Resolved time format 
+=iif(floor(Fields!time_worked.Value / 1440)=0,
+	"",
+	iif(Fields!time_worked.Value >= 0,
+		FORMAT(floor(Fields!time_worked.Value / 1440), "0") & "d ",
+		FORMAT(ceiling(Fields!time_worked.Value / 1440), "0") & "d "
+		)
+	
+	)
+&
+iif(
+	floor((Fields!time_worked.Value MOD 1440) / 60)=0 and floor(Fields!time_worked.Value / 1440)=0,
+	"",
+	iif(Fields!time_worked.Value > 0,
+		FORMAT(floor((Fields!time_worked.Value MOD 1440) / 60), "0") & "h ",
+		FORMAT(ceiling((Fields!time_worked.Value MOD 1440) / 60), "0") & "h "
+		)
+	)
+	
+& FORMAT(Fields!time_worked.Value MOD 60, "0#") & "m"
+
+
+
+/* ******** Old formula */
+		=iif(floor(Fields!time_worked.Value / 1440)=0,
+			"",
+			FORMAT(floor(Fields!time_worked.Value / 1440), "0") & "d "
+		)
+		&
+		iif(
+		floor((Fields!time_worked.Value MOD 1440) / 60)=0 and floor(Fields!time_worked.Value / 1440)=0,
+			"",
+			FORMAT(floor((Fields!time_worked.Value MOD 1440) / 60), "0") & "h "
+		)
+		& FORMAT(Fields!time_worked.Value MOD 60, "0#") & "m"
+		
+
+		
+		
+		
+		
+=iif(
+	Year(
+		System.TimeZone.CurrentTimeZone.ToLocalTime(Fields!ResolvedDate.Value)
+		) = 0001, 
+		nothing, 
+		CDate(FormatDateTime( System.TimeZone.CurrentTimeZone.ToLocalTime(Fields!ResolvedDate.Value) , DateFormat.ShortDate))
+		)
+		
+		
+		
+		
+
+-- steve colors
+=Switch(
+ReportItems!ID.Value>=14,"Red"
+,ReportItems!ID.Value>=8,"Yellow"
+,ReportItems!ID.Value>0,"Green" 
+)
+
+=ReportItems!ID.Value
+
+
+
+
+-- tickets worked
+
+=iif(
+	Fields!resolved_date_cst.Value = Fields!entered_date_cst.Value
+	and
+	Fields!EnteredBy.Value = Fields!LAST_ASSIGNED_TO.Value
+	and
+	( Fields!STATUS.Value = "Closed" OR Fields!STATUS.Value = "Resolved" ),
+	0,
+	1
+)
+
+
+-- SSRS DATE DIFFERENCE IN DAYS (TO MATCH SQL DATEDIFF)
+=DateDiff(DateInterval.Day
+	, CDate(FormatDatetime(Fields!resolved_cst.Value, DateFormat.ShortDate))
+	, CDate(FormatDatetime(Fields!resolved_cst.Value, DateFormat.ShortDate)))
+	
+-- SSRS DATE DIFFERENCE IN DAYS (TO MATCH SQL DATEDIFF); also checks for null dates
+=iif(Fields!resolved_cst.Value is nothing or Fields!resolved_cst.Value is nothing, nothing, 
+DateDiff(DateInterval.Day
+	, CDate(FormatDatetime(Fields!resolved_cst.Value, DateFormat.ShortDate))
+	, CDate(FormatDatetime(Fields!resolved_cst.Value, DateFormat.ShortDate)))
+ )
+ 
+ 
+ 
+ 
+ -- ORCHARD IMAGES ACTION LOG
+ =Switch(Fields!ACTION_TAKEN.Value = "Record Resolved", "recordresolved", Fields!ACTION_TAKEN.Value = "ANALYST COMMENT" OR Fields!ACTION_TAKEN.Value = "USER COMMENT", "comment", Fields!ACTION_TAKEN.Value = "Record Assigned", "recordassigned", Fields!ACTION_TAKEN.Value = "'Assign to Analyst' task run" OR Fields!ACTION_TAKEN.Value = "'Assign to Me' task run", "taskexecuted")
+ 
+ 
+ 
+ 
+ -- week number conditional on year
+ 
+ iif(Year(Fields!StartDateTime.Value.ToLocalTime()) = 2016,
+ something,
+ DatePart(DateInterval.WeekOfYear,  DateAdd("d",-1,Fields!StartDateTime.Value.ToLocalTime()))
+ )
+ 
+ -- proper FW
+  iif(DatePart("ww",Fields!StartDateTime.Value.ToLocalTime(),FirstDayofWeek.Monday,FirstWeekofYear.FirstFullWeek) < 10, "0"&DatePart("ww",Fields!StartDateTime.Value.ToLocalTime(),FirstDayofWeek.Monday,FirstWeekofYear.FirstFullWeek) , DatePart("ww",Fields!StartDateTime.Value.ToLocalTime(),FirstDayofWeek.Monday,FirstWeekofYear.FirstFullWeek) )
+ 
+ 
+ -- get FW and the proper year of that FW
+ =Year(DatePart("ww",Fields!StartDateTime.Value.ToLocalTime(),FirstDayofWeek.Monday,FirstWeekofYear.FirstFullWeek) , DatePart("ww",Fields!StartDateTime.Value.ToLocalTime(),FirstDayofWeek.Monday,FirstWeekofYear.FirstFullWeek)) & 
+ 
+ iif(DatePart("ww",Fields!StartDateTime.Value.ToLocalTime(),FirstDayofWeek.Monday,FirstWeekofYear.FirstFullWeek) < 10, "0" & DatePart("ww",Fields!StartDateTime.Value.ToLocalTime(),FirstDayofWeek.Monday,FirstWeekofYear.FirstFullWeek) , DatePart("ww",Fields!StartDateTime.Value.ToLocalTime(),FirstDayofWeek.Monday,FirstWeekofYear.FirstFullWeek) )
+ 
+ 
+ 
+ 
+ -- lori fw workaround -WORKS FOR 2016 AND 2017. REPLACE WITH PROPER FW DATE DIM IN SERVICE NOW
+ 
+ =Fields!Year_cst.Value & "-" & iif(DatePart("ww",Fields!StartDateTime.Value.ToLocalTime(),FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 < 10, "0" & DatePart("ww",Fields!StartDateTime.Value.ToLocalTime(),FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1, DatePart("ww",Fields!StartDateTime.Value.ToLocalTime(),FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 )
+ 
+ 
+ 
+-- fiscal year and week with potentially null date - RELIANT UPON ANOTHER CALCULATED FIELD
+=iif(Fields!resolved_cst.Value is nothing, 
+	nothing, 
+	Year(Fields!resolved_cst.Value) & "-" & 
+							iif(DatePart("ww",Fields!resolved_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 < 10, 
+								"0" & DatePart("ww",Fields!resolved_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1, 
+								DatePart("ww",Fields!resolved_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 
+								)
+)
+
+ 
+
+ 
+ 
+ 
+
+
+
+-- Created FY-FW; NOTE: USE A CONVERTED TIME
+=iif(Fields!created_cst.Value is nothing, 
+	nothing, 
+	Year(Fields!created_cst.Value) & "-" & 
+							iif(DatePart("ww",Fields!created_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 < 10, 
+								"0" & DatePart("ww",Fields!created_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1, 
+								DatePart("ww",Fields!created_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 
+								)
+)
+
+
+-- FY_FW: smarter FW that lumps week 0 together with week 52 for 2016-2017 ........
+=Switch(Fields!created_cst.Value is nothing, nothing, 
+Year(Fields!created_cst.Value) = 2017 and DatePart("ww",Fields!created_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 = 0, "2016-52",
+true, Year(Fields!created_cst.Value) & "-" & 
+							iif(DatePart("ww",Fields!created_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 < 10, 
+								"0" & DatePart("ww",Fields!created_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1, 
+								DatePart("ww",Fields!created_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 
+								)
+)
+
+
+-- *** FY_FW template ***
+=Switch(Fields!DateTime_CST.Value is nothing, nothing, 
+Year(Fields!DateTime_CST.Value) = 2017 and DatePart("ww",Fields!DateTime_CST.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 = 0, "2016-52",
+true, Year(Fields!DateTime_CST.Value) & "-" & 
+							iif(DatePart("ww",Fields!DateTime_CST.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 < 10, 
+								"0" & DatePart("ww",Fields!DateTime_CST.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1, 
+								DatePart("ww",Fields!DateTime_CST.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 
+								)
+)
+
+
+)
+
+
+-- 2/14/2017
+-- title expression
+=Switch(
+Join(Parameters!Chart1_Teams.Label, ", ") = "Retail Support, DO NOT USE", "L1",
+Join(Parameters!Chart1_Teams.Label, ", ") = "Aloha Data Configuration Team, Aloha Support Team", "Aloha",
+true, Join(Parameters!Chart1_Teams.Label, ", ")
+) 
+& " - First Day Resolve"
+
+
+
+
+
+
+
+
+-- template copy
+=Switch(Fields!start_cst.Value is nothing, nothing, 
+Year(Fields!start_cst.Value) = 2017 and DatePart("ww",Fields!start_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 = 0, "2016-52",
+true, Year(Fields!start_cst.Value) & "-" & 
+							iif(DatePart("ww",Fields!start_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 < 10, 
+								"0" & DatePart("ww",Fields!start_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1, 
+								DatePart("ww",Fields!start_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 
+								)
+)
+
+=Fields!Year_cst.Value & "-" & iif(DatePart("ww",Fields!StartDateTime.Value.ToLocalTime(),FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 < 10, "0" & DatePart("ww",Fields!StartDateTime.Value.ToLocalTime(),FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1, DatePart("ww",Fields!StartDateTime.Value.ToLocalTime(),FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 )
+
+
+
+
+	
+-- start / end display dates for analyst summaries report. 
+=iif(
+	Parameters!StartDate_BaseValue_Adjusted.Value = Parameters!EndDate_BaseValue_Adjusted.Value, 
+	FormatDateTime(Parameters!StartDate_BaseValue_Adjusted.Value, DateFormat.LongDate),
+	FormatDateTime(Parameters!StartDate_BaseValue_Adjusted.Value, DateFormat.ShortDate) &" to " & FormatDateTime(Parameters!EndDate_BaseValue_Adjusted.Value, DateFormat.ShortDate)
+	)
+	
+
+
+	
+
+-- switch start / end dates of subscription based on user receiving report ... (required additional previous paramter)
+
+
+-- SMART WEEKS: choose proper historical fiscal week relative to when the report is ran (defaul: last fiscal week)
+
+-- start date. Last Monday (last week day 2) or yesterday
+=Switch(Parameters!SubscriptionParameter.Value="Last Week", DateAdd(DateInterval.Day, 2-WeekDay(Today), DateAdd(DateInterval.Day, -7, Today)), 
+		Parameters!SubscriptionParameter.Value="Yesterday", DateAdd("d",-1,Today()) )
+		
+		
+-- end date. last Sunday (this week day 1) or yesterday
+=Switch(Parameters!SubscriptionParameter.Value="Last Week", DateAdd(DateInterval.Day, 1-WeekDay(Today), Today), 
+		Parameters!SubscriptionParameter.Value="Yesterday", DateAdd("d",-1,Today()))
+		
+		
+		
+		
+		
+-- FY_FW in escalations query..	
+=Switch(Fields!start_cst.Value is nothing, nothing, 
+Year(Fields!start_cst.Value) = 2017 and DatePart("ww",Fields!start_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 = 0, "2016-52",
+true, Year(Fields!start_cst.Value) & "-" & 
+							iif(DatePart("ww",Fields!start_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 < 10, 
+								"0" & DatePart("ww",Fields!start_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1, 
+								DatePart("ww",Fields!start_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 
+								)
+)	
+
+
+
+
+-- days to resolve histogram bins calculation (SSRS)
+
+=Switch(Fields!Days_To_Resolve.Value is nothing, nothing, 
+	Fields!Days_To_Resolve.Value = 0, "0",
+	Fields!Days_To_Resolve.Value = 1, "1",
+	Fields!Days_To_Resolve.Value = 2, "2",
+	Fields!Days_To_Resolve.Value = 3, "3",
+	Fields!Days_To_Resolve.Value = 4, "4",
+	Fields!Days_To_Resolve.Value = 5, "5",
+	Fields!Days_To_Resolve.Value = 6, "6",
+	Fields!Days_To_Resolve.Value = 7, "7",
+	Fields!Days_To_Resolve.Value > 7 And Fields!Days_To_Resolve.Value < 15, "8-14",
+	Fields!Days_To_Resolve.Value > 14 And Fields!Days_To_Resolve.Value < 31, "15-30",
+	Fields!Days_To_Resolve.Value > 30, "31+"
+	)
+	
+	-- ssrs histogram sort expression
+	=Switch(Fields!Days_To_Resolve_HistogramBins.Value = "0", 0,
+	Fields!Days_To_Resolve_HistogramBins.Value = "1", 1,
+	Fields!Days_To_Resolve_HistogramBins.Value = "2", 2,
+	Fields!Days_To_Resolve_HistogramBins.Value = "3", 3,
+	Fields!Days_To_Resolve_HistogramBins.Value = "4", 4,
+	Fields!Days_To_Resolve_HistogramBins.Value = "5", 5,
+	Fields!Days_To_Resolve_HistogramBins.Value = "6", 6,
+	Fields!Days_To_Resolve_HistogramBins.Value = "7", 7,
+	Fields!Days_To_Resolve_HistogramBins.Value = "8-14", 8,
+	Fields!Days_To_Resolve_HistogramBins.Value = "15-30", 9,
+	Fields!Days_To_Resolve_HistogramBins.Value = "31+", 10,
+	true, 11
+	)
+	
+	
+	
+--- ssrs chart title expressions
+
+=Switch(
+Join(Parameters!Chart1_Teams.Label, ", ") = "DO NOT USE, Retail Support", "L1",
+Join(Parameters!Chart1_Teams.Label, ", ") = "Aloha Data Configuration Team, Aloha Support Team", "Aloha",
+true, Join(Parameters!Chart1_Teams.Label, ", ")
+) 
+& " - First Call Fix"
+
+=Switch(
+Join(Parameters!Chart1_Teams.Label, ", ") = "DO NOT USE, Retail Support", "L1",
+Join(Parameters!Chart1_Teams.Label, ", ") = "Aloha Data Configuration Team, Aloha Support Team", "Aloha",
+true, Join(Parameters!Chart1_Teams.Label, ", ")
+) 
+& " - First Day Resolve"
+
+
+
+
+-- ssrs chart series labels (FCFR volume and pct label)
+
+-- new FCF (reversed)
+="#VALY"  & Environment.NewLine &  FormatPercent( Sum(Fields!FirstCallFix_flag.Value)/Count(Fields!Id.Value), 0 )
+
+-- new SDR (reversed)
+="#VALY"  & Environment.NewLine &  FormatPercent( Sum(Fields!SameDayResolve_flag.Value)/Count(Fields!Id.Value), 0 )
+
+
+-- complex label for potential lack of space
+=Switch(
+Count(Fields!Id.Value, "Chart1_CategoryGroup8") < 7, nothing,
+Count(Fields!Id.Value, "Chart1_CategoryGroup8") < 20 And Sum(Fields!FirstCallFix_flag.Value, "Chart1_CategoryGroup8"), "#VALY",
+Count(Fields!Id.Value, "Chart1_CategoryGroup8") - Sum(Fields!FirstCallFix_flag.Value, "Chart1_CategoryGroup8") < 15, "#VALY",
+true, "#VALY"  & Environment.NewLine &  FormatPercent( Sum(Fields!FirstCallFix_flag.Value)/Count(Fields!Id.Value), 0 )
+)
+
+=Switch(
+Count(Fields!Id.Value, "Chart1_CategoryGroup8") < 7, nothing,
+true, "#VALY"  & Environment.NewLine &  FormatPercent( Sum(Fields!SameDayResolve_flag.Value)/Count(Fields!Id.Value), 0 )
+)
+
+
+-- visibility
+=Switch(
+Count(Fields!Id.Value, "Chart1_CategoryGroup7") <= 5, false,
+true, true)
+
+
+=Switch(
+Count(Fields!Id.Value, "Chart1_CategoryGroup7") <= 5, false,
+Sum(Fields!FirstCallFix_flag.Value, "Chart1_CategoryGroup7") <= 1, false,
+true, true)
+
+
+=Switch(
+Count(Fields!Id.Value, "Chart1_CategoryGroup8") <= 5, false,
+Sum(Fields!FirstCallFix_flag.Value, "Chart1_CategoryGroup8") <= 1, false,
+true, true)
+
+
+
+
+
+
+-- ssrs chart data label position expression
+=iif(Count(IIf(Fields!ACTION_TAKEN.Value = "CREATED", 1, Nothing), "Chart7_CategoryGroup") > Count(IIf(Fields!ACTION_TAKEN.Value = "RESOLVED", 1, Nothing), "Chart7_CategoryGroup")
+	And Chart7_SeriesGroup = "CREATED", 
+"Top", 
+"Bottom")
+
+=IIF(Chart7_SeriesGroup = "CREATED", "Top", "Bottom")
+
+
+
+=iif( series = created and created > resolved, top, 
+
+
+=Switch(series = created and created > resolved, top, 
+series = resolved and resolved > created, top,
+true, bottom)
+
+
+
+
+
+ /* FY_FW calculation for Willie and Peter over at BI apps / FSS */
+ =Switch(Fields!firstresponse_cst.Value is nothing, nothing, 
+Year(Fields!firstresponse_cst.Value) = 2017 and DatePart("ww",Fields!firstresponse_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 = 0, "2016-52",
+true, Year(Fields!firstresponse_cst.Value) & "-" & 
+							iif(DatePart("ww",Fields!firstresponse_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 < 10, 
+								"0" & DatePart("ww",Fields!firstresponse_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1, 
+								DatePart("ww",Fields!firstresponse_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 
+								)
+)
+
+
+-- Jeri FW calc:
+=DatePart("ww",Fields!resolved_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Sep26)
+
+
+
+-- 4/5/2017
+
+-- using template from spellbook
+
+/* [DAYS : HOURS : MINS] FORMAT FOR TIME [IN MINUTES] */
+=iif(floor(Fields!Total_Billable_Time.Value / 1440)=0,
+	"",
+	FORMAT(floor(Fields!Total_Billable_Time.Value / 1440), "0") & "d "
+)
+&
+iif(
+floor((Fields!Total_Billable_Time.Value MOD 1440) / 60)=0 and floor(Fields!Total_Billable_Time.Value / 1440)=0,
+	"",
+	FORMAT(floor((Fields!Total_Billable_Time.Value MOD 1440) / 60), "0") & "h "
+)
+& FORMAT(Fields!Total_Billable_Time.Value MOD 60, "0#") & "m"
+
+
+
+
+-- Changes to OnePOS Snapshot Report - R10 War Room to mPOS Support
+-- changing R10 War Room to mPOS Support - ASSIGNED
+	-- first and second columns
+	=Sum(CInt(IIF( Fields!Support_Group_ID.Value = 8, Fields!IncidentCount.Value  , Nothing))) - Sum(CInt(IIF( Fields!Support_Group_ID.Value = 8 And IsNothing(Fields!Assigned_To.Value), Fields!IncidentCount.Value  , Nothing)))
+
+	-- 3rd column, from 2nd dataset
+	=Sum(CInt(IIF( Fields!Support_Group_ID.Value = 8, Fields!IncidentCount.Value  , Nothing)),"wow") - Sum(CInt(IIF( Fields!Support_Group_ID.Value = 8 And IsNothing(Fields!Assigned_To.Value), Fields!IncidentCount.Value  , Nothing)),"wow")
+
+-- changing R10 War Room to mPOS Support - UNASSIGNED
+	=Sum(CInt(IIF( Fields!Support_Group_ID.Value = 8 And IsNothing(Fields!Assigned_To.Value), Fields!IncidentCount.Value  , Nothing)))
+	
+	=Sum(CInt(IIF( Fields!Support_Group_ID.Value = 8 And IsNothing(Fields!Assigned_To.Value), Fields!IncidentCount.Value  , Nothing)),"wow")
+	
+-- total L3
+=Sum(CInt(IIF( Fields!Support_Group_ID.Value = 8 OR Fields!Support_Group_ID.Value = 67, Fields!IncidentCount.Value  , Nothing)))
+	
+=Sum(CInt(IIF( Fields!Support_Group_ID.Value = 8 OR Fields!Support_Group_ID.Value = 67, Fields!IncidentCount.Value  , Nothing)),"wow")
+
+-- total L1, L2, and L3
+=Sum(CInt(IIF( Fields!Support_Group_ID.Value = 7 OR Fields!Support_Group_ID.Value= 60 OR Fields!Support_Group_ID.Value= 8 OR Fields!Support_Group_ID.Value = 67, 
+	Fields!IncidentCount.Value  , Nothing)))
+	
+=Sum(CInt(IIF( Fields!Support_Group_ID.Value = 7 OR Fields!Support_Group_ID.Value= 60 OR Fields!Support_Group_ID.Value= 8 OR Fields!Support_Group_ID.Value = 67, 
+	Fields!IncidentCount.Value  , Nothing)),"wow")
+	
+	
+	
+-- other????? taking out onepos config of not-count list
+=Sum(
+	CInt(IIF( InStr("Retail Support,Mpos Support,R10 Tech Arch,R10 Development,R10 Data,Retail Payments,OnePOS Configuration,Aloha Support Team,Retail Support L2,Aloha Data Configuration Team,R10 Hardware Support,DO NOT USE,Aloha Hardware Support,Retail Support L3",Fields!Support_Group.Value) = 0, 
+				Fields!IncidentCount.Value  , 
+				Nothing)))
+
+-- for WoW
+=Sum(
+	CInt(IIF( InStr("Retail Support,Mpos Support,R10 Tech Arch,R10 Development,R10 Data,Retail Payments,OnePOS Configuration,Aloha Support Team,Retail Support L2,Aloha Data Configuration Team,R10 Hardware Support,DO NOT USE,Aloha Hardware Support,Retail Support L3",Fields!Support_Group.Value) = 0
+	And IsNothing(Fields!Support_Group.Value) = false, 
+				Fields!IncidentCount.Value  , 
+				Nothing)),"wow")
+				
+				
+				
+-- active pending aging incidents matrix
+
+
+-- display, group on
+=Switch(
+Fields!Support_Group.Value="Aloha Support Team" OR Fields!Support_Group.Value="Aloha Data Configuration Team" OR Fields!Support_Group.Value="Aloha Hardware Support",
+"Aloha",
+InStr(",DO NOT USE,OnePOS Call Back,Retail Support,Retail Support L2,Retail Support L3,Mpos Support,R10 Data,R10 Development,R10 Tech Arch,OnePOS Configuration", 
+Fields!Support_Group.Value ) > 0,
+"R10",
+Fields!Support_Group.Value="Retail Payments",
+Fields!Support_Group.Value,
+Fields!Support_Group.Value="R10 Hardware Support",
+Fields!Support_Group.Value,
+true, "Other"
+)
+
+
+-- sorting
+=Switch(
+Fields!Support_Group.Value="Aloha Support Team" OR Fields!Support_Group.Value="Aloha Data Configuration Team" OR Fields!Support_Group.Value="Aloha Hardware Support",
+1,
+InStr(",DO NOT USE,OnePOS Call Back,Retail Support,Retail Support L2,Retail Support L3,Mpos Support,R10 Data,R10 Development,R10 Tech Arch,OnePOS Configuration", 
+Fields!Support_Group.Value ) > 0,
+2,
+Fields!Support_Group.Value="Retail Payments",
+3,
+Fields!Support_Group.Value="R10 Hardware Support",
+4,
+true, 
+5
+)
+
+/* ************************ */
+
+
+
+
+-- old expression for avg resolving time (using FCFR dataset)
+=iif(Fields!Resolved_FY_FW.Value = Max(Fields!Resolved_FY_FW.Value, "Chart20"), true, false)
+=iif(Fields!resolved_date_cst.Value = Max(Fields!resolved_date_cst.Value, "Chart19_CategoryGroup2"), true, false)
+
+
+
+
+
+
+=Switch(
+	Fields!Resolved_FY_FW.Value = Max(Fields!Resolved_FY_FW.Value, "Chart20"), "Right", 
+	Fields!Resolved_FY_FW.Value = Min(Fields!Resolved_FY_FW.Value, "Chart20"), "Left"
+)
+
+
+
+
+
+-- first call fix flag
+=iif(Fields!NUM_TEAMS.Value=1 and (Fields!NUM_ASSIGNS.Value=1 or IsNothing(Fields!NUM_ASSIGNS.Value)=true) and Fields!SameDayResolve_flag.Value = 1,1,0)
+
+
+-- same day resolve flag
+=iif(Fields!created_date_cst.Value=Fields!resolved_date_cst.Value and IsNothing(Fields!CreatedDate.Value)=false and IsNothing(Fields!ResolvedDate.Value)=false , 1,0)
+
+
+
+
+-- getting analyst first call fix flag ...
+/*
+	check 1 - no assignments after
+	check 2 - max 1 team assignment after this analyst assignment (to account for the simultaneous analyst/team assignment, where team assignment happens slightly after)
+	check 3 - analyst previous assignments to the ticket = 0, so as to not allow reassign->resolve->fcfr (need to make sure other attempts are correctly calulated for this metric)
+	check 4 - assigned and resolved on same calendar day
+	optional 5 - ticket is still closed/resolved
+*/
+=iif(
+	IsNothing(Fields!ASSIGNMENTS_AFTER_THIS_ONE.Value) = true
+		AND (IsNothing(Fields!TEAM_ASSIGNMENTS_SINCE_THIS_TIME.Value) = true OR Fields!TEAM_ASSIGNMENTS_SINCE_THIS_TIME.Value <= 1)
+		AND IsNothing(Fields!ANALYST_PREVIOUS_ASSIGNMENTS_TO_THIS_SAME_TICKET.Value) = true
+		AND Fields!assigned_date_cst.Value = Fields!resolved_date_cst.Value
+	,1,0
+)
+
+
+
+
+/* 5/4/2017 */
+
+=Code.Divide(Sum(Fields!Analyst_FirstCallFix_flag.Value),CountDistinct(Fields!Id.Value))
+-- replace NaN (div/0) with Nothing for Analyst first call fix rate report
+=iif(
+	Count(Fields!Id.Value) = 0
+	, Nothing
+	, Code.Divide(Sum(Fields!Analyst_FirstCallFix_flag.Value),Count(Fields!Id.Value))
+	)
+	
+	
+-- online divide by 0 workaround
+=iif(
+	sum(Fields!Beta.Value)=0
+	,0
+	,sum(Fields!Alpha.Value)/iif(sum(Fields!Beta.Value)=0,1,sum(Fields!Beta.Value))
+	)
+	
+	
+	
+	
+	
+/* sr full history lookup - picture icon expression */
+
+=Switch(
+	Fields!ACTION_TAKEN.Value = "Record Assigned", "recordassigned", 
+	Fields!ACTION_TAKEN.Value = "'Assign to Analyst' task run" OR Fields!ACTION_TAKEN.Value = "'Assign to Me' task run", "taskexecuted", 
+	Fields!ACTION_TAKEN.Value = "Attached File", "attachmentadded",
+	Fields!ACTION_TAKEN.Value = "There was a status change for Activity"
+		OR Fields!ACTION_TAKEN.Value = "There was a status change for Service Request"
+		OR Fields!ACTION_TAKEN.Value = "The review activity votes were processed"
+		, "taskexecuted")
+		
+		
+		
+-- *** FY_FW template - copy ; smart week fiscal week formula***
+=Switch(Fields!assigned_date_cst.Value is nothing, nothing, 
+Year(Fields!assigned_date_cst.Value) = 2017 and DatePart("ww",Fields!assigned_date_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 = 0, "2016-52",
+true, Year(Fields!assigned_date_cst.Value) & "-" & 
+							iif(DatePart("ww",Fields!assigned_date_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 < 10, 
+								"0" & DatePart("ww",Fields!assigned_date_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1, 
+								DatePart("ww",Fields!assigned_date_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 
+								)
+)
+
+
+
+
+
+/* full work item lookup report - title expressions counting the IRs/SRs returned; count the number of IRs in dataset */
+
+-- All items
+=CountDistinct(Fields!ID.Value, "DataSet1")
+
+-- just count IRs
+=iif(
+	Sum(iif(Left(Fields!ID.Value,2) = "IR", 1, nothing), "DataSet1") > 0
+		, "IRs (" & Sum(iif(Left(Fields!ID.Value,2) = "IR", 1, nothing), "DataSet1") & ")"
+		, nothing
+	)
+	
+-- just count SRs
+=iif(
+	Sum(iif(Left(Fields!ID.Value,2) = "SR", 1, nothing), "DataSet1") > 0
+		, "SRs (" & Sum(iif(Left(Fields!ID.Value,2) = "SR", 1, nothing), "DataSet1") & ")"
+		, nothing
+	)
+	
+-- comma separator checking if both exist
+=iif(
+	Sum(iif(Left(Fields!ID.Value,2) = "SR", 1, nothing), "DataSet1") > 0 AND Sum(iif(Left(Fields!ID.Value,2) = "IR", 1, nothing), "DataSet1") > 0
+		, ", "
+		, nothing
+	)
+	
+if count of IRs > 0,
+display IRs
+if count of SRs > 0,
+display SRs
+
+
+
+
+
+
+
+
+	=iif(
+	Year(
+		System.TimeZone.CurrentTimeZone.ToLocalTime(Fields!FinishDateTime.Value)
+		) = 0001, 
+		NOTHING, 
+		System.TimeZone.CurrentTimeZone.ToLocalTime(Fields!FinishDateTime.Value)
+	)
+	
+	
+	=iif(
+	Year(
+		System.TimeZone.CurrentTimeZone.ToLocalTime(Fields!StartDateTime.Value)
+		) = 0001, 
+		Nothing, 
+		CDate(FormatDateTime( System.TimeZone.CurrentTimeZone.ToLocalTime(Fields!StartDateTime.Value) , DateFormat.ShortDate))
+	)
+	
+ /* *** FW_FY Calculation for Retail Support Reporting *** */
+ =Switch(Fields!date_cst.Value is nothing, nothing, 
+Year(Fields!date_cst.Value) = 2017 and DatePart("ww",Fields!date_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 = 0, "2016-52",
+true, Year(Fields!date_cst.Value) & "-" & 
+							iif(DatePart("ww",Fields!date_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 < 10, 
+								"0" & DatePart("ww",Fields!date_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1, 
+								DatePart("ww",Fields!date_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 
+								)
+)
+
+
+
+
+
+
+=Switch(
+Count(Fields!Id.Value) > 25, "Coral", 
+Count(Fields!Id.Value) > 15, "orange", 
+Count(Fields!Id.Value) > 5, "LightGreen", 
+true, "No Color"
+)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* ****************** color expressions ******************************** */
+/* **** Resource: https://blogs.msdn.microsoft.com/davidlean/2009/02/16/sql-reporting-how-to-conditional-color-14-the-basics-report-expressions-custom-code/ */
+
+
+
+
+-- To display a date range "12:45 AM – 3:34 PM"  Set the Value Property to
+=FORMAT(Fields!StartDate.Value, "t") & " – " & FORMAT(Fields!EndDate.Value,"t") 
+
+
+
+
+
+
+=iif(Parameters!TextSearch1.Value is Nothing, Nothing, Parameters!TextSearch1.Value)
+& "  " &
+iif(Parameters!TextSearch2.Value is Nothing, Nothing, Parameters!TextSearch2.Value)
+& "  " &
+iif(Parameters!TextSearch3.Value is Nothing, Nothing, Parameters!TextSearch3.Value)
+& "  " &
+iif(Parameters!TextSearch4.Value is Nothing, Nothing, Parameters!TextSearch4.Value)
+& "  " &
+iif(Parameters!TextSearch5.Value is Nothing, Nothing, Parameters!TextSearch5.Value)
+
+
+=Join(iif(Parameters!TextSearch1.Value is Nothing, Nothing, Parameters!TextSearch1.Value) 
+	& iif(Parameters!TextSearch2.Value is Nothing, Nothing, Parameters!TextSearch2.Value), ", "
+	)
+& " " &
+iif(Parameters!TextSearch3.Value is Nothing, Nothing, Parameters!TextSearch3.Value)
+& " " &
+iif(Parameters!TextSearch4.Value is Nothing, Nothing, Parameters!TextSearch4.Value)
+& " " &
+iif(Parameters!TextSearch5.Value is Nothing, Nothing, Parameters!TextSearch5.Value)
+
+
+
+
+
+-- ssrs support weekly status email - average resolve time by priority chart
+
+-- position
+=Switch(
+	Fields!Resolved_FY_FW.Value = Max(Fields!Resolved_FY_FW.Value, "Chart19"), "Right", 
+	Fields!Resolved_FY_FW.Value = Min(Fields!Resolved_FY_FW.Value, "Chart19"), "Left"
+)
+
+-- visible
+=iif(Fields!Resolved_FY_FW.Value = Max(Fields!Resolved_FY_FW.Value, "Chart19") OR Fields!Resolved_FY_FW.Value = Min(Fields!Resolved_FY_FW.Value , "Chart19"), true,false)
+
+
+
+
+
+
+
+ /* *** FW_FY Calculation for Retail Support Reporting *** */
+=Switch(Fields!closed_date_cst.Value is nothing, nothing, 
+Year(Fields!closed_date_cst.Value) = 2017 and DatePart("ww",Fields!closed_date_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 = 0, "2016-52",
+true, Year(Fields!closed_date_cst.Value) & "-" & 
+							iif(DatePart("ww",Fields!closed_date_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 < 10, 
+								"0" & DatePart("ww",Fields!closed_date_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1, 
+								DatePart("ww",Fields!closed_date_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 
+								)
+)
+
+
+
+
+
+/* *** First call fix flag with first-assignment-to-call-back-needed exclusion (relies on cte to look at first/second user) *** */
+/* *** For Extended Metrics sheet - FCFL uses slightly different formula w/ num_assigns *** */
+=iif( 
+Fields!NUM_TEAMS.Value=1 
+	and (Fields!NUM_ASSIGNS.Value<= 1 OR IsNothing(Fields!flag_AnalystNoCBN.Value) = false)
+	and Fields!FIRST_DAY_RESOLVE.Value = 1
+,1,0)
+
+
+ /* *** FW_FY Calculation for Retail Support Reporting *** */
+=Switch(Fields!resolved_cst.Value is nothing, nothing, 
+Year(Fields!resolved_cst.Value) = 2017 and DatePart("ww",Fields!resolved_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 = 0, "2016-52",
+true, Year(Fields!resolved_cst.Value) & "-" & 
+							iif(DatePart("ww",Fields!resolved_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 < 10, 
+								"0" & DatePart("ww",Fields!resolved_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1, 
+								DatePart("ww",Fields!resolved_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 
+								)
+)
+
+
+
+
+y = 0.0005x + 1.0098
+
+, [Grouping] = CASE 
+	WHEN IncidentTierQueuesvw.IncidentTierQueuesId IN (9,10,11,55) THEN 'L4'
+	WHEN IncidentTierQueuesvw.IncidentTierQueuesId IN (7,60,63,67) THEN 'Retail Support (L1, L2, L3)'
+	WHEN IncidentTierQueuesvw.IncidentTierQueuesId = 12 THEN 'Retail Payments'
+	WHEN IncidentTierQueuesvw.IncidentTierQueuesId = 8 THEN 'Retail Support War Room'
+	WHEN IncidentTierQueuesvw.IncidentTierQueuesId IN (56,61) THEN 'Aloha'
+	WHEN IncidentTierQueuesvw.IncidentTierQueuesId = 62 THEN 'Hardware-R10'
+	WHEN IncidentTierQueuesvw.IncidentTierQueuesId = 65 THEN 'Hardware-Aloha'
+	ELSE 'OTHER' END 
+
+
+
+
+
+	
+	
+=Switch(
+"Monday", 1,
+"Tuesday", 2,
+"Wednesday", 3,
+"Thursday", 4,
+"Friday", 5,
+"Saturday", 6,
+"Sunday", 7)
+
+
+
+
+="javascript:void window.open('http://orchard/" & "Incident" & "/edit/" & Fields!Id.Value & "/');"
+
+
+="javascript:void window.open('file:\\cewp1639\Attachments\2017-03\IR2526493\10339 Lane 205 ColdStart POS Launcher.JPG');"
+"\\cewp1639\Attachments\2017-03\IR2526493\10339 Lane 205 ColdStart POS Launcher.JPG"
+
+"\\cewp1639\Attachments\" & Format(date, YYYY-MM) & "\" & @IR & "\"
+="\\cewp1639\Attachments\" & Format(Fields!resolved_date_cst.Value, "yyyy-MM") & "\" & @IR & "\"
+
+
+
+/* ******* Go to file ********* */
+="\\cewp1639\Attachments\" & Format(Fields!resolved_date_cst.Value, "yyyy-MM") & "\" & Fields!ID.Value  & "\""
+
+
+
+
+
+
+/* stephanie super chart */
+
+=Switch(Fields!TRANSFERRED_OR_RESOLVED.Value = "RESOLVED" Or Fields!TRANSFERRED_OR_RESOLVED.Value="RESOLVED VIA PAGER DUTY", "Resolved", 
+Fields!TRANSFERRED_OR_RESOLVED.Value = "TRANSFERRED" And Fields!EscalatedTeamLevel.Value = 2, "Passed to L2",
+Fields!TRANSFERRED_OR_RESOLVED.Value = "TRANSFERRED" And Fields!EscalatedTeamLevel.Value = 4, "Passed to L4",
+Fields!TRANSFERRED_OR_RESOLVED.Value = "TRANSFERRED", "Passed Elsewhere",
+Fields!TRANSFERRED_OR_RESOLVED.Value = "STILL ASSIGNED", "STILL ASSIGNED"
+)
+
+
+/* L2 / L3 chart - grouping pager duty resolves to preserve colors */
+
+=Switch(Fields!TRANSFERRED_OR_RESOLVED.Value = "RESOLVED" Or Fields!TRANSFERRED_OR_RESOLVED.Value="RESOLVED VIA PAGER DUTY", "RESOLVED", 
+true, Fields!TRANSFERRED_OR_RESOLVED.Value
+)
+
+
+
+
+
+
+/* ** EXTERNAL REF ID ** */
+
+
+
+
+/* end of week instead of fiscal week */
+
+=iif(
+	Fields!closed_date_cst.Value is Nothing, 
+	Nothing, 
+	iif(Weekday(Fields!closed_date_cst.Value) = 1, Fields!closed_date_cst.Value, DateAdd("d", 1-Weekday(Fields!closed_date_cst.Value), DateAdd("d",7,Fields!closed_date_cst.Value)))
+)
+
+
+
+
+=iif(Fields!ClosedDate.Value is Nothing, Nothing, CDate(FormatDateTime( System.TimeZone.CurrentTimeZone.ToLocalTime(Fields!ClosedDate.Value) , DateFormat.ShortDate))
+	)
+	
+	
+/* L2 breakdown chart (super stephanie chart but for L2) */
+=Switch(Fields!TRANSFERRED_OR_RESOLVED.Value = "RESOLVED" Or Fields!TRANSFERRED_OR_RESOLVED.Value="RESOLVED VIA PAGER DUTY", "Resolved", 
+Fields!TRANSFERRED_OR_RESOLVED.Value = "TRANSFERRED" And Fields!EscalatedTeamLevel.Value = 1, "Passed to L1",
+Fields!TRANSFERRED_OR_RESOLVED.Value = "TRANSFERRED" And Fields!EscalatedTeamLevel.Value = 3, "Passed to L3",
+Fields!TRANSFERRED_OR_RESOLVED.Value = "TRANSFERRED", "Passed Elsewhere",
+Fields!TRANSFERRED_OR_RESOLVED.Value = "STILL ASSIGNED", "STILL ASSIGNED"
+)
+
+
+
+
+
+=iif(Parameters!TextSearch1.Value is Nothing, Nothing, Parameters!TextSearch1.Value)
+& "  " &
+iif(Parameters!TextSearch2.Value is Nothing, Nothing, Parameters!TextSearch2.Value)
+& "  " &
+iif(Parameters!TextSearch3.Value is Nothing, Nothing, Parameters!TextSearch3.Value)
+& "  " &
+iif(Parameters!TextSearch4.Value is Nothing, Nothing, Parameters!TextSearch4.Value)
+& "  " &
+iif(Parameters!TextSearch5.Value is Nothing, Nothing, Parameters!TextSearch5.Value)
+
+
+
+
+
+/* smart region mismatches */
+
+=IIF(Array.IndexOf(split("CE,FL,MA,MW,NA,NC,NE,PN,RM,SO,SP,SW,TS,UK",","),
+CStr(Fields!Smart_Region.Value))>-1,"Include","Exclude")
+
+-- new expr -> filtering in oddities	
+	
+=Switch(
+	Fields!Smart_Location.Value is Nothing,	"Exclude",
+	Array.IndexOf(split("CE,FL,MA,MW,NA,NC,NE,PN,RM,SO,SP,SW,TS,UK",","),CStr(Fields!Smart_Region.Value))>-1,"Include",
+	true, "Exclude")
+
+-- stacia misner expr - in parameter array
+	=Iif(InStr(Join(Parameters!store_all.Value,”,”), Fields!Category.Value)=0,True,False)
+	
+	
+	
+	
+/* snapshot report - assigned and unassigned */
+/* 9/8/2017 */
+
+
+-- assigned
+=Sum(CInt(IIF( Fields!Support_Group_ID.Value = 8, Fields!IncidentCount.Value  , Nothing))) - Sum(CInt(IIF( Fields!Support_Group_ID.Value = 8 And IsNothing(Fields!Assigned_To.Value), Fields!IncidentCount.Value  , Nothing)))
+
+-- unassigned
+=Sum(CInt(IIF( Fields!Support_Group_ID.Value = 8 And IsNothing(Fields!Assigned_To.Value), Fields!IncidentCount.Value  , Nothing)))
+
+
+
+
+
+
+-- r10 data (all; NOT USED in field)
+=Sum(CInt(IIF( Fields!Support_Group_ID.Value = 11, Fields!IncidentCount.Value  , Nothing)))
+
+-- r10 unass
+=Sum(CInt(IIF( Fields!Support_Group_ID.Value = 11 And IsNothing(Fields!Assigned_To.Value), Fields!IncidentCount.Value  , Nothing)))
+
+-- r10 data assigned
+=Sum(CInt(IIF( Fields!Support_Group_ID.Value = 11, Fields!IncidentCount.Value  , Nothing))) - Sum(CInt(IIF( Fields!Support_Group_ID.Value = 11 And IsNothing(Fields!Assigned_To.Value), Fields!IncidentCount.Value  , Nothing)))
+
+
+
+=Sum(CInt(IIF( Fields!Support_Group.Value = "Retail Support", Fields!IncidentCount.Value  , Nothing))) - Sum(CInt(IIF( Fields!Support_Group.Value = "Retail Support" And IsNothing(Fields!Assigned_To.Value), Fields!IncidentCount.Value  , Nothing)))
+
+
+
+
+
+
+
+
+-- sqldf
+select * 
+from 
+	(select priority, term, count(*), r = row_number() over(partition by priority order by count(*) desc) 
+	from [em.tidy.dtm.full] 
+	group by priority, term) 
+	x 
+where r < 11
+
+
+
+
+
+
+
+-- david mizrahi stuff - weeks for the chart ....
+
+
+
+-- david mizrahi ... week ending [sunday] calc...?
+= [date] + (7 - [date])
+=DateAdd("d", DateDiff()
+
+
+
+=iif(
+	Fields!entered_date_cst.Value is Nothing, 
+	Nothing, 
+	iif(Weekday(Fields!entered_date_cst.Value) = 1, Fields!entered_date_cst.Value, DateAdd("d", 1-Weekday(Fields!entered_date_cst.Value), DateAdd("d",7,Fields!entered_date_cst.Value)))
+)
+
+
+
+	
+=Switch(Parameters!SubscriptionParameter.Value="Last Week", DateAdd(DateInterval.Day, 2-WeekDay(Today), DateAdd(DateInterval.Day, -7, Today)), 
+Parameters!SubscriptionParameter.Value="Yesterday", DateAdd("d",-1,Today()),
+Parameters!SubscriptionParameter.Value="Last 13 Weeks", DateAdd(DateInterval.Day, 2-WeekDay(Today), DateAdd(DateInterval.Day, -7 * 13, Today))
+)
+
+
+
+
+-- aggregate lookup code
+--- (<aggregation type>, LookupSet(<base field>, <mapped to field>, <field to aggregate>, <other dataset>)
+=code.AggLookup("count", LookupSet(Fields!LABEL.Value, Fields!RESOLVED_BY.Value, Fields!Id.Value, "Resolved_LastUser"))
+
+
+
+
+
+/* ** lookup analyst group ** */
+
+	-- lookup
+	=Join(LookupSet(Fields!RESOLVED_BY.Value, Fields!LABEL.Value, Fields!LEVEL.Value, "List_AnalystList"),",")
+
+	-- finds position of first comma
+	=InStr(Join(LookupSet(Fields!RESOLVED_BY.Value, Fields!LABEL.Value, Fields!LEVEL.Value, "List_AnalystList"),","),",")
+
+	-- correct number if null
+	=iif(InStr(Join(LookupSet(Fields!RESOLVED_BY.Value, Fields!LABEL.Value, Fields!LEVEL.Value, "List_AnalystList"),","),",")
+	= 0,
+	len(Join(LookupSet(Fields!RESOLVED_BY.Value, Fields!LABEL.Value, Fields!LEVEL.Value, "List_AnalystList"),",")),
+	InStr(Join(LookupSet(Fields!RESOLVED_BY.Value, Fields!LABEL.Value, Fields!LEVEL.Value, "List_AnalystList"),","),",")-1
+	)
+
+
+	-- left (get proper single name)
+	=Left(Join(LookupSet(Fields!RESOLVED_BY.Value, Fields!LABEL.Value, Fields!LEVEL.Value, "List_AnalystList"),","),
+	iif(InStr(Join(LookupSet(Fields!RESOLVED_BY.Value, Fields!LABEL.Value, Fields!LEVEL.Value, "List_AnalystList"),","),",")
+	= 0,
+	len(Join(LookupSet(Fields!RESOLVED_BY.Value, Fields!LABEL.Value, Fields!LEVEL.Value, "List_AnalystList"),",")),
+	InStr(Join(LookupSet(Fields!RESOLVED_BY.Value, Fields!LABEL.Value, Fields!LEVEL.Value, "List_AnalystList"),","),",")-1
+	)
+	)
+	
+	
+-- !!! week ending calculation
+=iif(
+	Fields!resolved_date_cst.Value is Nothing, 
+	Nothing, 
+	iif(Weekday(Fields!resolved_date_cst.Value) = 1, 
+		Fields!resolved_date_cst.Value, 
+		DateAdd("d", 1-Weekday(Fields!resolved_date_cst.Value), DateAdd("d",7,Fields!resolved_date_cst.Value))
+	)
+)
+
+
+-- composite aggregate lookup Analyst + Week
+=code.AggLookup("count", LookupSet(Fields!ANALYST.Value & Fields!WEEK_ENDING.Value, 
+	Fields!RESOLVED_BY.Value & format(Fields!resolved_cst_week_ending.Value, "MM/dd/yyyy"), 
+	Fields!Id.Value, 
+	"Resolved_LastUser"))
+	
+=code.AggLookup("sum", LookupSet(Fields!ANALYST.Value & Fields!WEEK_ENDING.Value, 
+	Fields!RESOLVED_BY.Value & format(Fields!resolved_cst_week_ending.Value, "MM/dd/yyyy"), 
+	Fields!FirstCallFix.Value, 
+	"Resolved_LastUser"))

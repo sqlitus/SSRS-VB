@@ -1,0 +1,162 @@
+/* VB Spellbook */
+
+
+
+/* compare a potentially null date (end, resolve, etc) with a parameter date. Returns no #Error */
+=SUM(
+	IIF(		
+		CDate(FormatDateTime(System.TimeZone.CurrentTimeZone.ToLocalTime( Fields!RESOLVED_DATE.Value), DateFormat.ShortDate)) 
+					= CDate(FormatDateTime(Parameters!Date.Value,DateFormat.ShortDate)),
+					1,
+					0
+		)
+	)
+	
+/* return NULL/BLANK if no date, otherwise formatted+type short date */
+=IIF(
+			Year(
+				Fields!END_DATE.Value
+				)=1,
+			Nothing,
+			IIF(
+				Fields!end_cst_date.Value =	CDate(FormatDateTime(Parameters!Date.Value,DateFormat.ShortDate)) ,
+				"LightGreen",
+				nothing
+				)
+			)
+			
+			
+			
+/* !!! convert datetime to local datetime (potentially null), or blank string OR NULL if null !!! */
+/* ******* Better (obvious) method ******* */
+=iif(Fields!ResolvedDate.Value is Nothing, Nothing, System.TimeZone.CurrentTimeZone.ToLocalTime(Fields!ResolvedDate.Value))
+
+			/* old scrub method */
+				=iif(
+					Year(
+						System.TimeZone.CurrentTimeZone.ToLocalTime(Fields!DateTime.Value)
+						) = 0001, 
+						NOTHING, 
+						System.TimeZone.CurrentTimeZone.ToLocalTime(Fields!DateTime.Value)
+					)
+			
+			
+/* !!! convert datetime to local time DATE, or blank string if null !!! */
+/* ******* Better (obvious) method ******* */
+=iif(Fields!CreatedDate.Value is Nothing, Nothing, CDate(FormatDateTime( System.TimeZone.CurrentTimeZone.ToLocalTime(Fields!CreatedDate.Value) , DateFormat.ShortDate))
+	)
+	
+			/* old scrub method */
+			=iif(
+				Year(
+					System.TimeZone.CurrentTimeZone.ToLocalTime(Fields!CreatedDate.Value)
+					) = 0001, 
+					Nothing, 
+					CDate(FormatDateTime( System.TimeZone.CurrentTimeZone.ToLocalTime(Fields!CreatedDate.Value) , DateFormat.ShortDate))
+				)
+
+		
+	
+		
+/* Open URL in new tab - text box property action */
+="javascript:void window.open('http://orchard/" & "Incident" & "/edit/" & Fields!Id.Value & "/');"
+
+/* Open URL */
+="http://orchard/" & "Incident" & "/edit/" & Fields!Id.Value & "/"
+
+/*  Go to file  */
+="\\cewp1639\Attachments\" & Format(Fields!resolved_date_cst.Value, "yyyy-MM") & "\" & Fields!ID.Value  & "\"
+
+"----------------------
+-----------------------
+
+-- SSRS DATE DIFFERENCE IN DAYS (TO MATCH SQL DATEDIFF); also checks for null dates
+=iif(Fields!created_cst.Value is nothing or Fields!resolved_cst.Value is nothing, nothing, 
+DateDiff(DateInterval.Day
+	, CDate(FormatDatetime(Fields!created_cst.Value, DateFormat.ShortDate))
+	, CDate(FormatDatetime(Fields!resolved_cst.Value, DateFormat.ShortDate)))
+)
+ 
+ 
+ 
+ 
+ -- year and week number - defining first day of week and first week of year
+ =Year(Fields!StartDateTime.Value.ToLocalTime()) & iif(DatePart("ww",Fields!StartDateTime.Value.ToLocalTime(),FirstDayofWeek.Monday,FirstWeekofYear.FirstFullWeek) < 10, "0"&DatePart("ww",Fields!StartDateTime.Value.ToLocalTime(),FirstDayofWeek.Monday,FirstWeekofYear.FirstFullWeek) , DatePart("ww",Fields!StartDateTime.Value.ToLocalTime(),FirstDayofWeek.Monday,FirstWeekofYear.FirstFullWeek) )
+ 
+ 
+ 
+ 
+ /* *** FW_FY Calculation for Retail Support Reporting *** */
+=Switch(Fields!assigned_cst.Value is nothing, nothing, 
+Year(Fields!assigned_cst.Value) = 2017 and DatePart("ww",Fields!assigned_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 = 0, "2016-52",
+true, Year(Fields!assigned_cst.Value) & "-" & 
+							iif(DatePart("ww",Fields!assigned_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 < 10, 
+								"0" & DatePart("ww",Fields!assigned_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1, 
+								DatePart("ww",Fields!assigned_cst.Value,FirstDayofWeek.Monday,FirstWeekofYear.Jan1)-1 
+								)
+)
+
+
+
+
+/* [DAYS : HOURS : MINS] FORMAT FOR TIME [IN MINUTES] */
+=iif(floor(Fields!time_assigned.Value / 1440)=0,
+	"",
+	FORMAT(floor(Fields!time_assigned.Value / 1440), "0") & "d "
+)
+&
+iif(
+floor((Fields!time_assigned.Value MOD 1440) / 60)=0 and floor(Fields!time_assigned.Value / 1440)=0,
+	"",
+	FORMAT(floor((Fields!time_assigned.Value MOD 1440) / 60), "0") & "h "
+)
+& FORMAT(Fields!time_assigned.Value MOD 60, "0#") & "m"
+
+
+
+
+
+-- SMART WEEKS: choose proper historical fiscal week relative to when the report is ran (defaul: last fiscal week)
+
+-- start date. Last Monday (last week day 2) or yesterday
+=Switch(Parameters!SubscriptionParameter.Value="Last Week", DateAdd(DateInterval.Day, 2-WeekDay(Today), DateAdd(DateInterval.Day, -7, Today)), 
+		Parameters!SubscriptionParameter.Value="Yesterday", DateAdd("d",-1,Today()) )
+		
+		
+-- end date. last Sunday (this week day 1) or yesterday
+=Switch(Parameters!SubscriptionParameter.Value="Last Week", DateAdd(DateInterval.Day, 1-WeekDay(Today), Today), 
+		Parameters!SubscriptionParameter.Value="Yesterday", DateAdd("d",-1,Today()))
+	
+
+
+
+	
+
+-- !!! week ending calculation, requires CST date
+=iif(
+	Fields!resolved_date_cst.Value is Nothing, 
+	Nothing, 
+	iif(Weekday(Fields!resolved_date_cst.Value) = 1, 
+		Fields!resolved_date_cst.Value, 
+		DateAdd("d", 1-Weekday(Fields!resolved_date_cst.Value), DateAdd("d",7,Fields!resolved_date_cst.Value))
+	)
+)
+
+
+
+/* ************************ */
+/* VB REPORT CODE - BACKEND */
+/* ************************ */
+
+-- Dividing function
+Public Function Divide(ByVal dividend As Double, ByVal divisor As Double) As Double
+   If (IsNothing(divisor) Or divisor = 0) And (IsNothing(dividend) Or dividend = 0) Then
+      Return 0
+   Else
+      Return dividend / divisor
+   End If
+End Function
+
+	-- to cal function
+	=Code.Divide(<arg1>,<arg2>)
+	

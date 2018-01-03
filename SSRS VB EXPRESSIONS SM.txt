@@ -1,0 +1,97 @@
+/* SSRS SM VB EXPRESSIONS */
+
+/* FROM cn REPORTS */
+
+
+/* ACTIVE PENDING TICKETS */
+
+
+--priority 1 Active tickets
+=IIF(
+	(SUM(
+		IIF(Fields!DisplayName.Value="IR Priority 1", 
+		1, 
+		0), "Table_ActivePendingTickets"
+		)
+	) > 0, 
+	(ROUND(
+		(SUM(
+			IIF(Fields!SLAInstanceStatusValue.Value = "Active" AND Fields!DisplayName.Value="IR Priority 1", 
+			1, 
+			0), "Table_ActivePendingTickets"
+			) 
+			/ SUM(
+				IIF(Fields!DisplayName.Value="IR Priority 1", 
+				1, 
+				0), "Table_ActivePendingTickets"
+				)
+		) * 100, 0) & "%"), "--"
+	)	
+
+-- priority 1 met tickets
+=IIF((SUM(IIF(Fields!DisplayName.Value="IR Priority 1", 1, 0), "Table_ActivePendingTickets")) > 0, (ROUND((SUM(IIF(Fields!SLAInstanceStatusValue.Value = "Met" AND Fields!DisplayName.Value="IR Priority 1", 1, 0), "Table_ActivePendingTickets") / SUM(IIF(Fields!DisplayName.Value="IR Priority 1", 1, 0), "Table_ActivePendingTickets")) * 100, 0) & "%"), "--")
+
+
+
+
+-- concatenate parameters in textbox
+=Join(Parameters!SupportGroup.Label, ", ")
+
+
+
+/* ANALYST TEAM PERFORMANCE IR */
+
+-- AVG TIME TO RESOLVE
+=ROUND(SUM(Fields!TimeToResolveMin.Value, "Table_AnalystTeamPerformance_IR") / SUM(IIF(Fields!TimeToResolveMin.Value > 0, 1, 0), "Table_AnalystTeamPerformance_IR"), 0)
+
+-- PAGE NUMBER X/Y
+=Code.FormatString("{0}/{1}", Globals!PageNumber, Globals!TotalPages)
+
+
+
+
+
+
+------------
+
+-- go to orchard with IR number
+
+="http://orchard/" & SWITCH(Fields!Type.Value = "IR", "Incident", Fields!Type.Value = "SR", "ServiceRequest") & "/edit/" & Fields!Id.Value & "/"
+
+
+-- tablix different row colors
+=IIF(RowNumber("Type") Mod 2, "Transparent", "WhiteSmoke") 
+-- type calculated field
+=LEFT(Fields!Id.Value, 2)
+
+
+-- color field rose if nothing, otherwise check to color based on row number
+=IIF(Fields!AssignedTo.Value = Nothing, "MistyRose", IIF(RowNumber("Type") Mod 2, "Transparent", "WhiteSmoke") )
+
+
+-- format age time in days and hours
+=FORMAT(Fields!Age_Hr.Value / 24, "0") & "d " & FORMAT(Fields!Age_Hr.Value MOD 24, "0#") & "h"
+
+-- format date
+=FORMAT( (Fields!LastModified.Value).ToLocalTime(), "MMM dd, yyyy hh:mm tt")
+
+
+
+-- Label for column header
+=SWITCH(Fields!Type.Value = "IR", "Incidents", Fields!Type.Value = "SR", "Requests")
+
+-- support group query
+
+SELECT groupStr.DisplayName, irTQ.IncidentTierQueuesId
+FROM [dbo].[IncidentTierQueuesvw] irTQ
+LEFT JOIN [dbo].[DisplayStringDimvw] groupStr
+	ON groupStr.ElementName = irTQ.id
+	AND groupStr.LanguageCode = 'ENU'
+WHERE irTQ.IncidentTierQueuesId <> 0
+UNION
+SELECT 'ALL', NULL
+ORDER BY 1 ASC
+
+
+
+="http://orchard/" & "Incident" & "/edit/" & Fields!Id.Value & "/"
